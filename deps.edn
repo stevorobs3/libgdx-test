@@ -1,0 +1,15 @@
+{:paths ["src" "classes"]
+ :deps
+ {
+  ;; gdx
+  com.badlogicgames.gdx/gdx                                 {:mvn/version "1.11.0"}
+  com.badlogicgames.gdx/gdx-backend-lwjgl                   {:mvn/version "1.11.0"}
+  com.badlogicgames.gdx/gdx-box2d                           {:mvn/version "1.11.0"}
+  com.badlogicgames.gdx/gdx-box2d-platform$natives-desktop  {:mvn/version "1.11.0"}
+  com.badlogicgames.gdx/gdx-bullet                          {:mvn/version "1.11.0"}
+  com.badlogicgames.gdx/gdx-bullet-platform$natives-desktop {:mvn/version "1.11.0"}
+  com.badlogicgames.gdx/gdx-platform$natives-desktop        {:mvn/version "1.11.0"}
+  ;; clojure
+  org.clojure/clojure                                       {:mvn/version "1.11.1"}}
+ :aliases
+ {:test {:extra-paths ["test"]}}}

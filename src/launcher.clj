@@ -1,14 +1,14 @@
 (ns launcher
   (:require [core :refer :all])
   (:import [com.badlogic.gdx.backends.lwjgl LwjglApplication]
-           [org.lwjgl.input Keyboard]
-           [core Game])
+           [org.lwjgl.input Keyboard])
   (:gen-class))
 
 (defn -main []
-  (LwjglApplication. (Game.) "demo" 800 600)
+  (LwjglApplication. (core/create-game) "demo" 800 600)
   (Keyboard/enableRepeatEvents true))
 
 (comment
-
-  (-main))
+  (do (require '[launcher]
+               '[core])
+      (launcher/-main)))

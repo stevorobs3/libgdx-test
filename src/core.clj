@@ -1,21 +1,21 @@
 (ns core
   (:import
-    [com.badlogic.gdx Game Gdx]
+    [com.badlogic.gdx Game Gdx Input$Keys Input$Buttons]
     [com.badlogic.gdx.graphics GL20]
     (com.badlogic.gdx.graphics.glutils ShapeRenderer ShapeRenderer$ShapeType)))
 
-(defn- render [shape-renderer delta-time {:keys [position speed radius]}]
-  (let [circle-x (+ (:x position) (* (:x speed) delta-time))
-        circle-y (+ (:y position) (* (:y speed) delta-time))
-        speed-x  (if (or (< circle-x radius)
-                         (> circle-x (- (.getWidth Gdx/graphics) radius)))
-                   (- (:x speed))
-                   (:x speed))
-        speed-y  (if (or (< circle-y radius)
-                         (> circle-y (- (.getHeight Gdx/graphics) radius)))
-                   (- (:y speed))
-                   (:y speed))
+(defn- render [shape-renderer delta-time {:keys [position radius]}]
+  (let [circle-x (cond-> (:x position)
+                         (.isButtonPressed Gdx/input Input$Buttons/LEFT) ((fn [x] (.getX Gdx/input)))
+                         (.isKeyPressed Gdx/input Input$Keys/A) dec
+                         (.isKeyPressed Gdx/input Input$Keys/D) inc)
+        circle-y (cond-> (:y position)
+                         (.isButtonPressed Gdx/input Input$Buttons/LEFT) ((fn [y] (- (.getHeight Gdx/graphics) (.getY Gdx/input))))
+                         (.isKeyPressed Gdx/input Input$Keys/W) inc
+                         (.isKeyPressed Gdx/input Input$Keys/S) dec)
         radius   50]
+
+
 
     (.glClearColor Gdx/gl (float 0.25) 0.25 (float 0.25) (float 1))
     (.glClear Gdx/gl GL20/GL_COLOR_BUFFER_BIT)
@@ -26,16 +26,12 @@
     (.end shape-renderer)
     {:position {:x circle-x
                 :y circle-y}
-     :speed    {:x speed-x
-                :y speed-y}
      :radius   radius}))
 
 (defn create-game []
   (let [shape-renderer (atom nil)
         state          (atom {:position {:x 400
                                          :y 300}
-                              :speed    {:x 120
-                                         :y 60}
                               :radius   50})]
     (proxy [Game] []
       (create []

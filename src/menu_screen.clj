@@ -1,38 +1,46 @@
 (ns menu-screen
-  (:import (com.badlogic.gdx Game Screen Gdx InputAdapter Input$Keys)
-           (com.badlogic.gdx.graphics GL20)))
+  (:import (com.badlogic.gdx Screen Gdx InputAdapter Input$Keys)
+           (com.badlogic.gdx.graphics GL20)
+           (com.badlogic.gdx.graphics.g2d BitmapFont SpriteBatch GlyphLayout)))
 
-(defn- render [{:keys [r g b]}]
-  (.glClearColor Gdx/gl r g b 1)
-  (.glClear Gdx/gl GL20/GL_COLOR_BUFFER_BIT))
+(defn- render [{:keys [^SpriteBatch batch
+                       ^BitmapFont font] :as context} state]
+  (let [text         "Menu Screen"
+        font-data    (.getData font)
+        glyph-layout (GlyphLayout.)]
+    (.glClearColor Gdx/gl 0 0 0 1)
+    (.glClear Gdx/gl GL20/GL_COLOR_BUFFER_BIT)
+    (.begin batch)
+    (.setColor font 1 1 0 1)
+    (.setScale font-data 4)
+    (.setText glyph-layout font text)
 
-(defn- key-down [key-code game state new-state create-game-screen]
+    (.draw font batch glyph-layout
+           (float (- (/ (.getWidth Gdx/graphics) 2)
+                     (/ (.width glyph-layout) 2)))
+           (float (+ (/ (.getHeight Gdx/graphics) 2)
+                     (/ (.height glyph-layout) 2))) )
+    (.end batch)))
+
+(defn- key-down [key-code {:keys [game] :as context} state create-game-screen]
   (prn "typed in menu screen" key-code Input$Keys/SPACE)
-  (reset! state (new-state))
   (when (= key-code Input$Keys/SPACE)
-    (.setScreen game (create-game-screen game)))
+    (.setScreen game (create-game-screen context)))
   true)
 
-(defn- show [game state new-state create-game-screen]
-  (prn "showing menu screen")
-  (.setInputProcessor Gdx/input
-                      (proxy [InputAdapter] []
-                        (keyDown [keycode]
-                          (key-down keycode game state new-state create-game-screen)))))
-
-
-(defn create [^Game game create-game-screen]
-  (let [rand-float #(float (/ (rand-int Integer/MAX_VALUE) Integer/MAX_VALUE))
-        new-state  #(hash-map :r (rand-float)
-                              :g (rand-float)
-                              :b (rand-float))
-        state      (atom (new-state))]
+(defn create [context create-game-screen]
+  (let [state (atom {:r 1
+                     :g 1
+                     :b 1})]
     (proxy [Screen] []
       (render [delta]
-        (render @state))
+        (render context @state))
       (show []
-        (show game state new-state create-game-screen)
-        )
+        (prn "showing menu screen")
+        (.setInputProcessor Gdx/input
+                            (proxy [InputAdapter] []
+                              (keyDown [char]
+                                (key-down char context state create-game-screen)))))
       (hide []
         (prn "hiding menu screen")
         (.setInputProcessor Gdx/input nil))

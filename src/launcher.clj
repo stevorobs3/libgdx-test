@@ -10,11 +10,11 @@
 
 (declare create-menu-screen)
 
-(defn create-game-screen [game]
-  (game-screen/create game create-menu-screen))
+(defn create-game-screen [context]
+  (game-screen/create context create-menu-screen))
 
-(defn create-menu-screen [game]
-  (menu-screen/create game create-game-screen))
+(defn create-menu-screen [context]
+  (menu-screen/create context create-game-screen))
 
 (defn -main []
   (let [game ^Game (core/create-game create-menu-screen)]

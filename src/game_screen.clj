@@ -6,20 +6,20 @@
   (.glClearColor Gdx/gl r g b 1)
   (.glClear Gdx/gl GL20/GL_COLOR_BUFFER_BIT))
 
-(defn- key-down [key-code game state new-state create-game-screen]
+(defn- key-down [key-code {:keys [game] :as context} state new-state create-game-screen]
   (prn "typed in game screen" key-code Input$Keys/SPACE)
   (reset! state (new-state))
   (when (= key-code Input$Keys/SPACE)
-    (.setScreen game (create-game-screen game)))
+    (.setScreen game (create-game-screen context)))
   true)
 
-(defn- show [game state new-state create-menu-screen]
+(defn- show [context state new-state create-menu-screen]
   (prn "showing game screen")
   (.setInputProcessor Gdx/input
                       (proxy [InputAdapter] []
                         (keyDown [keycode]
-                          (key-down keycode game state new-state create-menu-screen)))))
-(defn create [^Game game create-menu-screen]
+                          (key-down keycode context state new-state create-menu-screen)))))
+(defn create [context create-menu-screen]
   (let [rand-float #(float (/ (rand-int Integer/MAX_VALUE) Integer/MAX_VALUE))
         new-state  #(hash-map :r (rand-float)
                               :g (rand-float)
@@ -29,7 +29,7 @@
       (render [delta]
         (render @state))
       (show []
-        (show game state new-state create-menu-screen)
+        (show context state new-state create-menu-screen)
         )
       (hide []
         (prn "hiding game screen")

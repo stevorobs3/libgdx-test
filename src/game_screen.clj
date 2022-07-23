@@ -7,14 +7,14 @@
   (.glClear Gdx/gl GL20/GL_COLOR_BUFFER_BIT))
 
 (defn- key-down [key-code {:keys [game] :as context} state new-state create-game-screen]
-  (prn "typed in game screen" key-code Input$Keys/SPACE)
+  (println "typed in game screen" key-code Input$Keys/SPACE)
   (reset! state (new-state))
   (when (= key-code Input$Keys/SPACE)
     (.setScreen game (create-game-screen context)))
   true)
 
 (defn- show [context state new-state create-menu-screen]
-  (prn "showing game screen")
+  (println "showing game screen")
   (.setInputProcessor Gdx/input
                       (proxy [InputAdapter] []
                         (keyDown [keycode]
@@ -32,10 +32,10 @@
         (show context state new-state create-menu-screen)
         )
       (hide []
-        (prn "hiding game screen")
+        (println "hiding game screen")
         (.setInputProcessor Gdx/input nil))
       (resize [width height]
-        (prn "resizing" width height))
+        (println "resizing" width height))
       (pause [])
       (resume [])
       (dispose []))))

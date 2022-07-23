@@ -4,7 +4,7 @@
     [game-screen]
     [menu-screen])
   (:import
-    [com.badlogic.gdx.backends.lwjgl LwjglApplication]
+    [com.badlogic.gdx.backends.lwjgl LwjglApplication LwjglApplicationConfiguration]
     (com.badlogic.gdx Game))
   (:gen-class))
 
@@ -17,10 +17,14 @@
   (menu-screen/create context create-game-screen))
 
 (defn -main []
-  (let [game ^Game (core/create-game create-menu-screen)]
-    (LwjglApplication. game "demo" 800 600)))
+  (let [game   ^Game (core/create-game create-menu-screen)
+        config (LwjglApplicationConfiguration.)]
+    (set! (.title config) "test")
+    (set! (.width config) 1024)
+    (set! (.height config) 768)
+    (LwjglApplication. game config)))
 
 (comment
-  (do (require '[launcher]
+ (do (require '[launcher]
                '[core])
       (launcher/-main)))

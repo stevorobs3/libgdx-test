@@ -5,11 +5,16 @@
            (com.badlogic.gdx.graphics.glutils ShapeRenderer ShapeRenderer$ShapeType)))
 
 (defn- render [{:keys [delta-time
+                       world-width
+                       world-height
                        ^ShapeRenderer shape-renderer
                        ^OrthographicCamera camera] :as _context} _state]
-  (let [rotate-speed 500
-        zoom-speed   5
-        rect-size    100]
+  (let [rotate-speed 100
+        zoom-speed   1
+        num-rects 10
+        rect-size    (/ world-height num-rects)
+        rand-float   (fn [] (float (/ (rand-int Integer/MAX_VALUE) Integer/MAX_VALUE)))]
+    (.set (.position camera) (/ world-width 2) (/ world-height 2) 0)
     (when (.isKeyPressed Gdx/input Input$Keys/LEFT)
       (.rotate camera (float (* rotate-speed delta-time))))
     (when (.isKeyPressed Gdx/input Input$Keys/RIGHT)
@@ -26,21 +31,22 @@
     (.glClearColor Gdx/gl 0 0 0 1)
     (.glClear Gdx/gl GL20/GL_COLOR_BUFFER_BIT)
     (.update camera)
-    (.setProjectionMatrix shape-renderer (.-combined camera))
+    (.setProjectionMatrix shape-renderer (.combined camera))
     (.begin shape-renderer ShapeRenderer$ShapeType/Filled)
-    (.setColor shape-renderer 1 0 0 1)
-    (.rect shape-renderer
-           (- (/ (.getWidth Gdx/graphics) 2) (/ rect-size 2))
-           (- (/ (.getHeight Gdx/graphics) 2) (/ rect-size 2))
-           rect-size
-           rect-size)
+
+    (doseq [i (range num-rects)
+            j (range num-rects)]
+      (.setColor shape-renderer (rand-float) 0 0 1)
+      (.rect shape-renderer
+             (* i rect-size)
+             (* j rect-size)
+             rect-size
+             rect-size))
+
     (.end shape-renderer)))
 
-(defn- resize [{:keys [^OrthographicCamera camera] :as _context} width height]
-  (println "resizing" width height)
-  ;; camera.position.set(Gdx.graphics.getWidth() / 2, Gdx.graphics.getHeight() / 2, 0);
-  (.set (.position camera) (/ (.getWidth Gdx/graphics) 2) (/ (.getHeight Gdx/graphics) 2) 0)
-  )
+(defn- resize [_context width height]
+  (println "resizing" width height))
 
 (defn- key-down [key-code {:keys [game] :as context} state create-game-screen]
   (println "typed in menu screen" key-code Input$Keys/SPACE)

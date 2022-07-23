@@ -8,15 +8,20 @@
 (defn create-game [create-initial-screen-fn]
   (let [[font batch shape-renderer
          :as disposables] (repeatedly 3 (fn [] (atom nil)))
-        camera (atom nil)]
+        camera       (atom nil)
+        world-width  100
+        world-height 100]
     (proxy [Game] []
       (create []
         (.setScreen this (create-initial-screen-fn {:game           this
                                                     :font           (reset! font (BitmapFont.))
                                                     :batch          (reset! batch (SpriteBatch.))
-                                                    :camera         (reset! camera (doto (OrthographicCamera.)
-                                                                                     (.setToOrtho true)
-                                                                                     (.update)))
+                                                    :world-width    world-width
+                                                    :world-height   world-height
+                                                    :camera         (reset! camera (let [c (doto (OrthographicCamera. world-width world-height)
+                                                                                             (.update))]
+                                                                                     (.set (.position c) (/ world-width 2) (/ world-height 2) 0)
+                                                                                     c))
                                                     :shape-renderer (reset! shape-renderer (ShapeRenderer.))}))
         (println "creating game!"))
       (dispose []

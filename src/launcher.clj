@@ -20,8 +20,8 @@
   (let [game   ^Game (core/create-game create-menu-screen)
         config (LwjglApplicationConfiguration.)]
     (set! (.title config) "test")
-    (set! (.width config) 800)
-    (set! (.height config) 800)
+    (set! (.width config) 1024)
+    (set! (.height config) 768)
     (LwjglApplication. game config)))
 
 (comment

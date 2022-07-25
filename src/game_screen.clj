@@ -26,24 +26,32 @@
     (.rectLine shape-renderer (.add start (Vector2. x y)) (.add end (Vector2. x y)) line-thickness)))
 
 
-(defn- draw-grid [shape-renderer world-width world-height]
-  (let [num-rows       20
-        num-cols       10
-        rect-size      (/ world-height num-rows)
-        line-thickness (float 4)
-        fill-color     Color/BLACK
-        outline-color  Color/DARK_GRAY
-        start-x        (- (/ world-width 2) (/ (* num-cols rect-size) 2))]
+(defn- draw-grid [shape-renderer rect-size line-thickness x-offset
+                  num-rows num-cols]
+  (let [fill-color    Color/BLACK
+        outline-color Color/DARK_GRAY]
     (.begin shape-renderer ShapeRenderer$ShapeType/Filled)
     (doseq [i (range num-cols)
             j (range num-rows)]
       (draw-square shape-renderer
-                   (+ (* rect-size i) start-x) (* rect-size j)
+                   (+ (* rect-size i) x-offset) (* rect-size j)
                    rect-size rect-size
                    line-thickness
                    fill-color
                    outline-color))
     (.end shape-renderer)))
+
+(defn- draw-tetromino [shape-renderer color rect-size line-thickness x-offset vertices]
+  (.begin shape-renderer ShapeRenderer$ShapeType/Filled)
+  (doseq [[x y] vertices]
+
+    (draw-square shape-renderer
+                 (+ x-offset (* x rect-size)) (* y rect-size)
+                 rect-size rect-size
+                 line-thickness
+                 color
+                 Color/WHITE))
+  (.end shape-renderer))
 
 
 (def ^:private fps-timer (atom nil))
@@ -69,17 +77,46 @@
                        ^BitmapFont font
                        ^Viewport view-port] :as _context}
                state]
-  (let [^OrthographicCamera camera (.getCamera view-port)]
+  (let [^OrthographicCamera camera (.getCamera view-port)
+        num-rows                   20
+        num-cols                   10
+        rect-size                  (/ world-height num-rows)
+        grid-line-thickness        4
+        tetromino-line-thickness   2
+        x-offset                   (- (/ world-width 2) (/ (* num-cols rect-size) 2))]
     (.glClearColor Gdx/gl 0 0 0 1)
     (.glClear Gdx/gl GL20/GL_COLOR_BUFFER_BIT)
     (.setProjectionMatrix shape-renderer (.combined camera))
-    (draw-grid shape-renderer world-width world-height)
+    (draw-grid shape-renderer rect-size grid-line-thickness x-offset
+               num-rows num-cols)
+
+
+
+    (draw-tetromino shape-renderer Color/RED rect-size tetromino-line-thickness x-offset
+                    [[0 0]
+                     [0 1]
+                     [1 0]
+                     [1 1]])
+    (draw-tetromino shape-renderer Color/PINK rect-size tetromino-line-thickness x-offset
+                    [[0 2]
+                     [0 3]
+                     [1 2]
+                     [1 3]])
+
+
+    (draw-tetromino shape-renderer Color/BLUE rect-size tetromino-line-thickness x-offset
+                    [[2 0]
+                     [2 1]
+                     [3 0]
+                     [3 1]])
+
+    (draw-tetromino shape-renderer Color/GREEN rect-size tetromino-line-thickness x-offset
+                    [[2 2]
+                     [2 3]
+                     [3 2]
+                     [3 3]])
 
     #_(debug-fps sprite-batch font (.getCamera view-port))
-
-
-
-
     state))
 
 (defn- resize [{:keys [^Viewport view-port] :as _context} state width height]

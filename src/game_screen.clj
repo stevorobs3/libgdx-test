@@ -56,68 +56,66 @@
 
 (def ^:private fps-timer (atom nil))
 (def ^:private fps (atom nil))
-(defn- debug-fps [^SpriteBatch sprite-batch ^BitmapFont font ^OrthographicCamera camera]
+(defn- debug-fps [^SpriteBatch sprite-batch
+                  ^BitmapFont font
+                  ^OrthographicCamera camera
+                  delta-time]
   (.setProjectionMatrix sprite-batch (.combined camera))
   (when (or (nil? @fps-timer) (>= @fps-timer 1))
     (reset! fps-timer 0)
-    (reset! fps (format "%.1f" (/ 1 (.getDeltaTime Gdx/graphics)))))
+    (reset! fps (format "%.1f" (/ 1 delta-time))))
   (swap! fps-timer (fn [fps-timer]
                      (+ (or fps-timer 0)
-                        (.getDeltaTime Gdx/graphics))
+                        delta-time)
                      ))
   (.begin sprite-batch)
   (.setColor font Color/RED)
   (.draw font sprite-batch (str "FPS=" @fps) (float 20) (float 20))
   (.end sprite-batch))
 
-(defn- render [{:keys [world-width
+(defn- render [{:keys [delta-time
+                       world-width
                        world-height
                        ^ShapeRenderer shape-renderer
                        ^SpriteBatch sprite-batch
                        ^BitmapFont font
                        ^Viewport view-port] :as _context}
-               state]
+               {:keys [tetrominos
+                       timer] :as state}]
   (let [^OrthographicCamera camera (.getCamera view-port)
         num-rows                   20
         num-cols                   10
         rect-size                  (/ world-height num-rows)
         grid-line-thickness        4
         tetromino-line-thickness   2
-        x-offset                   (- (/ world-width 2) (/ (* num-cols rect-size) 2))]
+        x-offset                   (- (/ world-width 2) (/ (* num-cols rect-size) 2))
+        move-time                  1
+        new-timer                  (+ timer delta-time)
+        [new-tetrominos new-timer] (if (>= new-timer move-time)
+                                     [(->> tetrominos
+                                           (map (fn [tetromino]
+                                                  (update tetromino :vertices
+                                                          (fn [vertices]
+                                                            (map
+                                                              (fn [[x y]] [x (dec y)])
+                                                              vertices))))))
+                                      (- new-timer move-time)]
+                                     [tetrominos new-timer])
+        ]
     (.glClearColor Gdx/gl 0 0 0 1)
     (.glClear Gdx/gl GL20/GL_COLOR_BUFFER_BIT)
     (.setProjectionMatrix shape-renderer (.combined camera))
     (draw-grid shape-renderer rect-size grid-line-thickness x-offset
                num-rows num-cols)
 
+    (doseq [{:keys [color vertices] :as _tetromino} new-tetrominos]
+      (draw-tetromino shape-renderer
+                      color rect-size tetromino-line-thickness x-offset
+                      vertices))
 
-
-    (draw-tetromino shape-renderer Color/RED rect-size tetromino-line-thickness x-offset
-                    [[0 0]
-                     [0 1]
-                     [1 0]
-                     [1 1]])
-    (draw-tetromino shape-renderer Color/PINK rect-size tetromino-line-thickness x-offset
-                    [[0 2]
-                     [0 3]
-                     [1 2]
-                     [1 3]])
-
-
-    (draw-tetromino shape-renderer Color/BLUE rect-size tetromino-line-thickness x-offset
-                    [[2 0]
-                     [2 1]
-                     [3 0]
-                     [3 1]])
-
-    (draw-tetromino shape-renderer Color/GREEN rect-size tetromino-line-thickness x-offset
-                    [[2 2]
-                     [2 3]
-                     [3 2]
-                     [3 3]])
-
-    #_(debug-fps sprite-batch font (.getCamera view-port))
-    state))
+    #_(debug-fps sprite-batch font (.getCamera view-port) delta-time)
+    (assoc state :tetrominos new-tetrominos
+                 :timer new-timer)))
 
 (defn- resize [{:keys [^Viewport view-port] :as _context} state width height]
   (println "resizing" width height)
@@ -131,7 +129,23 @@
   state)
 
 (defn create [{:keys [view-ports] :as context} create-game-screen]
-  (let [state (atom {:view-port (first view-ports)})]
+  (let [state (atom {:view-port  (first view-ports)
+                     :tetrominos [{:vertices [[4 19]
+                                              [5 19]
+                                              [4 18]
+                                              [5 18]]
+                                   :color    Color/SALMON}
+                                  {:vertices [[6 19]
+                                              [7 19]
+                                              [8 19]
+                                              [9 19]]
+                                   :color    Color/OLIVE}
+                                  #_{:vertices [[2 2]
+                                                [2 3]
+                                                [3 2]
+                                                [3 3]]
+                                     :color    Color/TEAL}]
+                     :timer      0})]
     (proxy [Screen] []
       (render [delta]
         (swap! state #(render (assoc context :delta-time delta) %)))

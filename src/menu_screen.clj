@@ -9,17 +9,21 @@
                        world-width
                        world-height
                        ^ShapeRenderer shape-renderer
-                       ^Viewport view-port
+                       view-ports
                        ^SpriteBatch batch
-                       ^Texture justina-texture] :as _context} _state]
+                       ^Texture justina-texture] :as _context}
+               {:keys [^Viewport view-port] :as state}]
   (let [rotate-speed               100
         zoom-speed                 1
-        num-rects-wide             10
-        num-rects-high             (int (* num-rects-wide (/ world-height world-width)))
-        rect-height                (/ world-width num-rects-wide)
-        rect-width                 rect-height
-        rand-float                 (fn [] (float (/ (rand-int Integer/MAX_VALUE) Integer/MAX_VALUE)))
-        ^OrthographicCamera camera (.getCamera view-port)]
+
+        ^Viewport new-view-port    (cond
+                                     (.isKeyPressed Gdx/input Input$Keys/NUM_1) (first view-ports)
+                                     (.isKeyPressed Gdx/input Input$Keys/NUM_2) (second view-ports)
+                                     (.isKeyPressed Gdx/input Input$Keys/NUM_3) (nth view-ports 2)
+                                     (.isKeyPressed Gdx/input Input$Keys/NUM_4) (nth view-ports 3)
+                                     :else view-port)
+        ^OrthographicCamera camera (.getCamera new-view-port)]
+    (println "new-view port" (type new-view-port))
     (.set (.position camera) (/ world-width 2) (/ world-height 2) 0)
     (when (.isKeyPressed Gdx/input Input$Keys/LEFT)
       (.rotate camera (float (* rotate-speed delta-time))))
@@ -32,35 +36,30 @@
     (when (.isKeyPressed Gdx/input Input$Keys/DOWN)
       (set! (.zoom camera) (float (+ (.zoom camera)
                                      (* zoom-speed delta-time)))))
+    (.update view-port (.getWidth Gdx/graphics) (.getHeight Gdx/graphics))
+    (.set (.position camera) (/ (.viewportWidth camera) 2) (/ (.viewportHeight camera) 2) 0)
 
 
     (.glClearColor Gdx/gl 0 0 0 1)
     (.glClear Gdx/gl GL20/GL_COLOR_BUFFER_BIT)
     (.update camera)
-    (.apply view-port)
+    (.apply new-view-port)
     (.setProjectionMatrix shape-renderer (.combined camera))
+    (.setProjectionMatrix batch (.combined camera))
     (.begin batch)
     (.draw batch justina-texture (float 0) (float 0))
     (.end batch)
+    (.begin shape-renderer ShapeRenderer$ShapeType/Filled)
+    (.rect shape-renderer (/ world-width 2) (/ world-height 2) 100 100)
+    (.end shape-renderer)
+    (assoc state :view-port new-view-port)))
 
-    #_#_#_(.begin shape-renderer ShapeRenderer$ShapeType/Filled)
-
-            (doseq [i (range num-rects-wide)
-                    j (range num-rects-high)]
-              (.setColor shape-renderer (rand-float) 0 0 1)
-              (.rect shape-renderer
-                     (* i rect-height)
-                     (* j rect-width)
-                     rect-height
-                     rect-width))
-
-            (.end shape-renderer)))
-
-(defn- resize [{:keys [^Viewport view-port] :as _context} width height]
+(defn- resize [_context {:keys [^Viewport view-port] :as state} width height]
   (let [camera (.getCamera view-port)]
     (println "resizing" width height)
     (.update view-port width height)
-    (.set (.position camera) (/ (.viewportWidth camera) 2) (/ (.viewportHeight camera) 2) 0)))
+    (.set (.position camera) (/ (.viewportWidth camera) 2) (/ (.viewportHeight camera) 2) 0)
+    state))
 
 (defn- key-down [key-code {:keys [game] :as context} state create-game-screen]
   (println "typed in menu screen" key-code Input$Keys/SPACE)
@@ -68,13 +67,11 @@
     (.setScreen game (create-game-screen context)))
   true)
 
-(defn create [context create-game-screen]
-  (let [state (atom {:r 1
-                     :g 1
-                     :b 1})]
+(defn create [{:keys [view-ports] :as context} create-game-screen]
+  (let [state (atom {:view-port (first view-ports)})]
     (proxy [Screen] []
       (render [delta]
-        (render (assoc context :delta-time delta) @state))
+        (swap! state #(render (assoc context :delta-time delta) %)))
       (show []
         (println "showing menu screen")
         (.setInputProcessor Gdx/input
@@ -85,8 +82,7 @@
         (println "hiding menu screen")
         (.setInputProcessor Gdx/input nil))
       (resize [width height]
-        (resize context width height)
-        )
+        (swap! state (fn [s] (resize context s width height))))
       (pause [])
       (resume [])
       (dispose [])

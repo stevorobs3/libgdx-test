@@ -9,10 +9,9 @@
 (defn create-game [create-initial-screen-fn]
   (let [[font batch shape-renderer justina-texture
          :as disposables] (repeatedly 4 (fn [] (atom nil)))
-        camera       (atom nil)
         view-ports   (atom nil)
-        world-width  1920
-        world-height 1080]
+        world-width  800
+        world-height 800]
     (proxy [Game] []
       (create []
         (.setScreen this (create-initial-screen-fn
@@ -56,7 +55,6 @@
                               :world-height    world-height
                               :justina-texture @justina-texture
                               :shape-renderer  @shape-renderer
-                              :view-port       (first @view-ports)
                               :view-ports      @view-ports})))
         (println "creating game!"))
       (dispose []

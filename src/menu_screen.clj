@@ -7,7 +7,7 @@
 
 (defn- render [{:keys [world-width
                        world-height
-                       ^SpriteBatch batch
+                       ^SpriteBatch sprite-batch
                        ^BitmapFont font
                        ^Viewport view-port] :as _context}
                state]
@@ -16,15 +16,15 @@
         ^GlyphLayout layout        (GlyphLayout. font display-text Color/PINK (float 210) Align/center true)]
     (.glClearColor Gdx/gl 0 0 0 1)
     (.glClear Gdx/gl GL20/GL_COLOR_BUFFER_BIT)
-    (.setProjectionMatrix batch (.combined camera))
-    (.begin batch)
+    (.setProjectionMatrix sprite-batch (.combined camera))
+    (.begin sprite-batch)
     (.setScale (.getData font) 1.5)
-    (.draw font batch layout (float (- (/ world-width 2)
-                                       (/ (.width layout) 2)))
+    (.draw font sprite-batch layout (float (- (/ world-width 2)
+                                              (/ (.width layout) 2)))
            (float (+ (/ world-height 2)
                      (/ (.height layout) 2))))
 
-    (.end batch)
+    (.end sprite-batch)
     state))
 
 (defn- resize [{:keys [^Viewport view-port] :as _context} state width height]

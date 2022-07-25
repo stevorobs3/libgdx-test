@@ -1,6 +1,6 @@
 (ns menu-screen
   (:import (com.badlogic.gdx Screen Gdx InputAdapter Input$Keys)
-           (com.badlogic.gdx.graphics GL20 OrthographicCamera Camera)
+           (com.badlogic.gdx.graphics GL20 OrthographicCamera Camera Texture)
            (com.badlogic.gdx.graphics.g2d BitmapFont SpriteBatch GlyphLayout)
            (com.badlogic.gdx.graphics.glutils ShapeRenderer ShapeRenderer$ShapeType)
            (com.badlogic.gdx.utils.viewport Viewport)))
@@ -9,14 +9,17 @@
                        world-width
                        world-height
                        ^ShapeRenderer shape-renderer
-                       ^OrthographicCamera camera] :as _context} _state]
-  (let [rotate-speed   100
-        zoom-speed     1
-        num-rects-wide 10
-        num-rects-high (int (* num-rects-wide (/ world-height world-width)))
-        rect-height    (/ world-width num-rects-wide)
-        rect-width     rect-height
-        rand-float     (fn [] (float (/ (rand-int Integer/MAX_VALUE) Integer/MAX_VALUE)))]
+                       ^Viewport view-port
+                       ^SpriteBatch batch
+                       ^Texture justina-texture] :as _context} _state]
+  (let [rotate-speed               100
+        zoom-speed                 1
+        num-rects-wide             10
+        num-rects-high             (int (* num-rects-wide (/ world-height world-width)))
+        rect-height                (/ world-width num-rects-wide)
+        rect-width                 rect-height
+        rand-float                 (fn [] (float (/ (rand-int Integer/MAX_VALUE) Integer/MAX_VALUE)))
+        ^OrthographicCamera camera (.getCamera view-port)]
     (.set (.position camera) (/ world-width 2) (/ world-height 2) 0)
     (when (.isKeyPressed Gdx/input Input$Keys/LEFT)
       (.rotate camera (float (* rotate-speed delta-time))))
@@ -34,25 +37,30 @@
     (.glClearColor Gdx/gl 0 0 0 1)
     (.glClear Gdx/gl GL20/GL_COLOR_BUFFER_BIT)
     (.update camera)
+    (.apply view-port)
     (.setProjectionMatrix shape-renderer (.combined camera))
-    (.begin shape-renderer ShapeRenderer$ShapeType/Filled)
+    (.begin batch)
+    (.draw batch justina-texture (float 0) (float 0))
+    (.end batch)
 
-    (doseq [i (range num-rects-wide)
-            j (range num-rects-high)]
-      (.setColor shape-renderer (rand-float) 0 0 1)
-      (.rect shape-renderer
-             (* i rect-height)
-             (* j rect-width)
-             rect-height
-             rect-width))
+    #_#_#_(.begin shape-renderer ShapeRenderer$ShapeType/Filled)
 
-    (.end shape-renderer)))
+            (doseq [i (range num-rects-wide)
+                    j (range num-rects-high)]
+              (.setColor shape-renderer (rand-float) 0 0 1)
+              (.rect shape-renderer
+                     (* i rect-height)
+                     (* j rect-width)
+                     rect-height
+                     rect-width))
 
-(defn- resize [{:keys [^Viewport view-port
-                       ^Camera camera] :as _context} width height]
-  (println "resizing" width height)
-  (.update view-port width height)
-  (.set (.position camera) (/ (.viewportWidth camera) 2) (/ (.viewportHeight camera) 2) 0))
+            (.end shape-renderer)))
+
+(defn- resize [{:keys [^Viewport view-port] :as _context} width height]
+  (let [camera (.getCamera view-port)]
+    (println "resizing" width height)
+    (.update view-port width height)
+    (.set (.position camera) (/ (.viewportWidth camera) 2) (/ (.viewportHeight camera) 2) 0)))
 
 (defn- key-down [key-code {:keys [game] :as context} state create-game-screen]
   (println "typed in menu screen" key-code Input$Keys/SPACE)

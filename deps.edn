@@ -1,4 +1,4 @@
-{:paths ["src" "classes"]
+{:paths ["src" "classes" "resources"]
  :deps
  {
   ;; gdx

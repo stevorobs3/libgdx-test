@@ -1,4 +1,5 @@
 (ns game-screen
+  (:require [clojure.set :as set])
   (:import (com.badlogic.gdx Screen Gdx InputAdapter Input$Keys)
            (com.badlogic.gdx.graphics GL20 OrthographicCamera Color)
            (com.badlogic.gdx.graphics.g2d BitmapFont SpriteBatch GlyphLayout)
@@ -41,7 +42,7 @@
                    outline-color))
     (.end shape-renderer)))
 
-(defn- draw-tetromino [shape-renderer color rect-size line-thickness x-offset vertices]
+(defn- draw-piece [shape-renderer color rect-size line-thickness x-offset vertices]
   (.begin shape-renderer ShapeRenderer$ShapeType/Filled)
   (doseq [[x y] vertices]
 
@@ -73,6 +74,37 @@
   (.draw font sprite-batch (str "FPS=" @fps) (float 20) (float 20))
   (.end sprite-batch))
 
+(defn random-piece []
+  {:vertices [[4 19]
+              [5 19]
+              [4 20]
+              [5 20]]
+   :color    Color/BLUE}
+  )
+
+(defn collision?
+  "returns true if the piece shares a vertex with any of the pieces"
+  [pieces piece]
+  (let [piece-vertices (set (:vertices piece))
+        all-vertices   (->> pieces
+                            (mapcat :vertices)
+                            (into #{}))]
+    (-> (set/intersection all-vertices piece-vertices)
+        empty?
+        not)))
+
+(defn- move-pieces [pieces piece]
+  (let [new-piece (update piece :vertices
+                          (fn [vertices]
+                            (map
+                              (fn [[x y]] [x (dec y)])
+                              vertices)))]
+    (if (collision? pieces new-piece)
+      [(conj pieces piece)
+       (random-piece)]
+      [pieces
+       new-piece])))
+
 (defn- render [{:keys [delta-time
                        world-width
                        world-height
@@ -80,27 +112,23 @@
                        ^SpriteBatch sprite-batch
                        ^BitmapFont font
                        ^Viewport view-port] :as _context}
-               {:keys [tetrominos
+               {:keys [piece
+                       pieces
                        timer] :as state}]
   (let [^OrthographicCamera camera (.getCamera view-port)
         num-rows                   20
         num-cols                   10
         rect-size                  (/ world-height num-rows)
         grid-line-thickness        4
-        tetromino-line-thickness   2
+        piece-line-thickness       2
         x-offset                   (- (/ world-width 2) (/ (* num-cols rect-size) 2))
-        move-time                  1
+        move-time                  0.1
         new-timer                  (+ timer delta-time)
-        [new-tetrominos new-timer] (if (>= new-timer move-time)
-                                     [(->> tetrominos
-                                           (map (fn [tetromino]
-                                                  (update tetromino :vertices
-                                                          (fn [vertices]
-                                                            (map
-                                                              (fn [[x y]] [x (dec y)])
-                                                              vertices))))))
-                                      (- new-timer move-time)]
-                                     [tetrominos new-timer])
+        [new-pieces new-piece new-timer] (if (>= new-timer move-time)
+                                           (conj
+                                             (move-pieces pieces piece)
+                                             (- new-timer move-time))
+                                           [pieces piece new-timer])
         ]
     (.glClearColor Gdx/gl 0 0 0 1)
     (.glClear Gdx/gl GL20/GL_COLOR_BUFFER_BIT)
@@ -108,13 +136,14 @@
     (draw-grid shape-renderer rect-size grid-line-thickness x-offset
                num-rows num-cols)
 
-    (doseq [{:keys [color vertices] :as _tetromino} new-tetrominos]
-      (draw-tetromino shape-renderer
-                      color rect-size tetromino-line-thickness x-offset
-                      vertices))
+    (doseq [{:keys [color vertices] :as _piece} (conj new-pieces new-piece)]
+      (draw-piece shape-renderer
+                  color rect-size piece-line-thickness x-offset
+                  vertices))
 
     #_(debug-fps sprite-batch font (.getCamera view-port) delta-time)
-    (assoc state :tetrominos new-tetrominos
+    (assoc state :pieces new-pieces
+                 :piece new-piece
                  :timer new-timer)))
 
 (defn- resize [{:keys [^Viewport view-port] :as _context} state width height]
@@ -129,23 +158,23 @@
   state)
 
 (defn create [{:keys [view-ports] :as context} create-game-screen]
-  (let [state (atom {:view-port  (first view-ports)
-                     :tetrominos [{:vertices [[4 19]
-                                              [5 19]
-                                              [4 18]
-                                              [5 18]]
-                                   :color    Color/SALMON}
-                                  {:vertices [[6 19]
-                                              [7 19]
-                                              [8 19]
-                                              [9 19]]
-                                   :color    Color/OLIVE}
-                                  #_{:vertices [[2 2]
-                                                [2 3]
-                                                [3 2]
-                                                [3 3]]
-                                     :color    Color/TEAL}]
-                     :timer      0})]
+  (let [state (atom {:view-port (first view-ports)
+                     :pieces    [{:vertices [[4 1]
+                                             [5 1]
+                                             [4 0]
+                                             [5 0]]
+                                  :color    Color/SALMON}
+                                 {:vertices [[6 0]
+                                             [7 0]
+                                             [8 0]
+                                             [9 0]]
+                                  :color    Color/FOREST}]
+                     :piece     {:vertices [[6 19]
+                                            [7 19]
+                                            [8 19]
+                                            [9 19]]
+                                 :color    Color/OLIVE}
+                     :timer     0})]
     (proxy [Screen] []
       (render [delta]
         (swap! state #(render (assoc context :delta-time delta) %)))

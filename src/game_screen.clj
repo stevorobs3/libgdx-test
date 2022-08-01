@@ -79,27 +79,45 @@
               [5 19]
               [4 20]
               [5 20]]
-   :color    Color/BLUE}
-  )
+   :color    Color/BLUE})
 
 (defn collision?
-  "returns true if the piece shares a vertex with any of the pieces"
-  [pieces piece]
-  (let [piece-vertices (set (:vertices piece))
-        all-vertices   (->> pieces
-                            (mapcat :vertices)
-                            (into #{}))]
-    (-> (set/intersection all-vertices piece-vertices)
-        empty?
-        not)))
+  "returns true if the piece shares a vertex with any of the pieces or
+   any of the left, bottom or right walls"
+  [pieces piece num-cols]
+  (let [piece-vertices   (set (:vertices piece))
+        all-vertices     (->> pieces
+                              (mapcat :vertices)
+                              (into #{}))
+        hit-other-piece? (-> (set/intersection all-vertices piece-vertices)
+                             empty?
+                             not)
+        hit-left-wall?   (reduce (fn [acc [x _]]
+                                   (or acc (< x 0)))
+                                 false
+                                 piece-vertices)
+        hit-right-wall?  (reduce (fn [acc [x _]]
+                                   (or acc (> x num-cols)))
+                                 false
+                                 piece-vertices)
+        hit-bottom-wall?  (reduce (fn [acc [_ y]]
+                                   (or acc (< y 0)))
+                                 false
+                                 piece-vertices)]
+    (or hit-other-piece?
+        hit-left-wall?
+        hit-right-wall?
+        hit-bottom-wall?)))
 
-(defn- move-pieces [pieces piece]
+(defn- move-piece [pieces piece [direction-x direction-y] num-cols]
   (let [new-piece (update piece :vertices
                           (fn [vertices]
                             (map
-                              (fn [[x y]] [x (dec y)])
+                              (fn [[x y]]
+                                [(+ x direction-x)
+                                 (+ y direction-y)])
                               vertices)))]
-    (if (collision? pieces new-piece)
+    (if (collision? pieces new-piece num-cols)
       [(conj pieces piece)
        (random-piece)]
       [pieces
@@ -126,7 +144,7 @@
         new-timer                  (+ timer delta-time)
         [new-pieces new-piece new-timer] (if (>= new-timer move-time)
                                            (conj
-                                             (move-pieces pieces piece)
+                                             (move-piece pieces piece [0 -1] num-cols)
                                              (- new-timer move-time))
                                            [pieces piece new-timer])
         ]
@@ -159,7 +177,7 @@
 
 (defn create [{:keys [view-ports] :as context} create-game-screen]
   (let [state (atom {:view-port (first view-ports)
-                     :pieces    [{:vertices [[4 1]
+                     :pieces    [#_#_{:vertices [[4 1]
                                              [5 1]
                                              [4 0]
                                              [5 0]]

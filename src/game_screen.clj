@@ -97,10 +97,10 @@
                                  false
                                  piece-vertices)
         hit-right-wall?  (reduce (fn [acc [x _]]
-                                   (or acc (> x num-cols)))
+                                   (or acc (>= x num-cols)))
                                  false
                                  piece-vertices)
-        hit-bottom-wall?  (reduce (fn [acc [_ y]]
+        hit-bottom-wall? (reduce (fn [acc [_ y]]
                                    (or acc (< y 0)))
                                  false
                                  piece-vertices)]
@@ -109,33 +109,34 @@
         hit-right-wall?
         hit-bottom-wall?)))
 
-(defn- move-piece [pieces piece [direction-x direction-y] num-cols]
-  (let [new-piece (update piece :vertices
-                          (fn [vertices]
-                            (map
-                              (fn [[x y]]
-                                [(+ x direction-x)
-                                 (+ y direction-y)])
-                              vertices)))]
-    (if (collision? pieces new-piece num-cols)
-      [(conj pieces piece)
-       (random-piece)]
-      [pieces
-       new-piece])))
+(defn- move-piece [pieces piece [direction-x direction-y :as direction] num-cols]
+  (let [new-piece   (update piece :vertices
+                            (fn [vertices]
+                              (map
+                                (fn [[x y]]
+                                  [(+ x direction-x)
+                                   (+ y direction-y)])
+                                vertices)))
+        collided?   (collision? pieces new-piece num-cols)
+        going-down? (= direction [0 -1])]
+    (cond
+      (and collided? going-down?) [(conj pieces piece)
+                                   (random-piece)]
+      collided? [pieces piece]
+      :else [pieces
+             new-piece])))
 
 (defn- render [{:keys [delta-time
                        world-width
                        world-height
                        ^ShapeRenderer shape-renderer
-                       ^SpriteBatch sprite-batch
-                       ^BitmapFont font
                        ^Viewport view-port] :as _context}
-               {:keys [piece
+               {:keys [num-cols
+                       num-rows
+                       piece
                        pieces
                        timer] :as state}]
   (let [^OrthographicCamera camera (.getCamera view-port)
-        num-rows                   20
-        num-cols                   10
         rect-size                  (/ world-height num-rows)
         grid-line-thickness        4
         piece-line-thickness       2
@@ -146,8 +147,7 @@
                                            (conj
                                              (move-piece pieces piece [0 -1] num-cols)
                                              (- new-timer move-time))
-                                           [pieces piece new-timer])
-        ]
+                                           [pieces piece new-timer])]
     (.glClearColor Gdx/gl 0 0 0 1)
     (.glClear Gdx/gl GL20/GL_COLOR_BUFFER_BIT)
     (.setProjectionMatrix shape-renderer (.combined camera))
@@ -169,30 +169,48 @@
   (.update view-port width height true)
   state)
 
-(defn- key-down [key-code {:keys [game] :as context} state create-game-screen]
-  (println "typed in game screen" key-code Input$Keys/SPACE)
-  (when (= key-code Input$Keys/SPACE)
-    (.setScreen game (create-game-screen context)))
-  state)
+(defn- key-down
+  [key-code
+   {:keys [game] :as context}
+   {:keys [pieces piece num-cols] :as state}
+   create-game-screen]
+  (println "typed in game screen" key-code Input$Keys/SPACE
+           (= key-code Input$Keys/LEFT)
+           )
+  (cond
+    (= key-code Input$Keys/SPACE) (do (.setScreen game (create-game-screen context))
+                                      state)
+    (= key-code Input$Keys/LEFT) (let [
+                                       _ (prn "move piece left")
+                                       [new-pieces new-piece] (move-piece pieces piece [-1 0] num-cols)]
+                                   (assoc state :pieces new-pieces
+                                                :piece new-piece))
+    (= key-code Input$Keys/RIGHT) (let [_ (prn "move piece right")
+                                        [new-pieces new-piece] (move-piece pieces piece [1 0] num-cols)]
+                                    (assoc state :pieces new-pieces
+                                                 :piece new-piece))
+    :else state))
 
 (defn create [{:keys [view-ports] :as context} create-game-screen]
   (let [state (atom {:view-port (first view-ports)
                      :pieces    [#_#_{:vertices [[4 1]
-                                             [5 1]
-                                             [4 0]
-                                             [5 0]]
-                                  :color    Color/SALMON}
-                                 {:vertices [[6 0]
-                                             [7 0]
-                                             [8 0]
-                                             [9 0]]
-                                  :color    Color/FOREST}]
+                                                 [5 1]
+                                                 [4 0]
+                                                 [5 0]]
+                                      :color    Color/SALMON}
+          {:vertices [[6 0]
+                      [7 0]
+                      [8 0]
+                      [9 0]]
+           :color    Color/FOREST}]
                      :piece     {:vertices [[6 19]
                                             [7 19]
                                             [8 19]
                                             [9 19]]
                                  :color    Color/OLIVE}
-                     :timer     0})]
+                     :timer     0
+                     :num-rows  20
+                     :num-cols  10})]
     (proxy [Screen] []
       (render [delta]
         (swap! state #(render (assoc context :delta-time delta) %)))

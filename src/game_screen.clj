@@ -27,6 +27,51 @@
     (.rectLine shape-renderer (.add start (Vector2. x y)) (.add end (Vector2. x y)) line-thickness)))
 
 
+(def pieces
+  [{:type      :O
+    :color     Color/GREEN
+    :rotations [[[0 0]
+                 [0 1]
+                 [-1 0]
+                 [-1 1]]]}
+   {:type      :I
+    :colar     Color/RED
+    :rotations [[[-2 0]
+                 [-1 0]
+                 [0 0]
+                 [1 0]]
+                [[0 2]
+                 [0 1]
+                 [0 0]
+                 [0 -1]]]}
+   {:type      :T
+    :colar     Color/BLUE
+    :rotations [[[0 1]
+                 [1 0]
+                 [0 0]
+                 [-1 0]]
+                [[0 0]
+                 [0 1]
+                 [0 -1]
+                 [-1 0]]
+                [[-1 0]
+                 [0 0]
+                 [1 0]
+                 [0 -1]]
+                [[0 0]
+                 [0 1]
+                 [0 -1]
+                 [1 0]]]}
+   ;todo: finish S
+   ;todo: add Z, J and L
+   {:type      :S
+    :color     Color/SCARLET
+    :rotations [[[0 0]
+                 [1 0]
+                 [0 -1]
+                 [-1 -1]]]}])
+
+
 (defn- draw-grid [shape-renderer rect-size line-thickness x-offset
                   num-rows num-cols]
   (let [fill-color    Color/BLACK

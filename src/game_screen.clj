@@ -7,7 +7,6 @@
            (com.badlogic.gdx.graphics.glutils ShapeRenderer ShapeRenderer$ShapeType)
            (com.badlogic.gdx.math Vector2)))
 
-
 ;todo: probably pull .begin / .end outside of this method to a higher level?
 ;todo: reuse vector2's
 (defn- draw-square
@@ -181,6 +180,12 @@
       :else [pieces
              new-piece])))
 
+(defn- rotate-piece [pieces piece num-cols]
+  (let [new-piece (update piece :vertices rotate-90)
+        _ (prn (:vertices piece) "->" (:vertices new-piece))
+        collided? (collision? pieces new-piece num-cols)]
+    (if collided? piece new-piece)))
+
 (defn- render [{:keys [delta-time
                        world-width
                        world-height
@@ -245,6 +250,10 @@
                                         [new-pieces new-piece] (move-piece pieces piece [1 0] num-cols piece-spawn-point)]
                                     (assoc state :pieces new-pieces
                                                  :piece new-piece))
+    (= key-code Input$Keys/UP) (let [_         (prn "rotate piece")
+                                     ;;todo: this will require keeping track of how far from the origin the piece is! / translating, rotating, etc!!!
+                                     new-piece (rotate-piece pieces piece num-cols)]
+                                 (assoc state :piece new-piece))
     :else state))
 
 (defn create [{:keys [view-ports] :as context} create-game-screen]

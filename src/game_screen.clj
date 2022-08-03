@@ -27,49 +27,57 @@
     (.rectLine shape-renderer (.add start (Vector2. x y)) (.add end (Vector2. x y)) line-thickness)))
 
 
+(defn rotate-90
+  ([verts]
+   (map #(rotate-90 (first %) (second %))
+        verts))
+  ([x y]
+   [(- y) x]))
+
 (def pieces
-  [{:type      :O
-    :color     Color/GREEN
-    :rotations [[[0 0]
-                 [0 1]
-                 [-1 0]
-                 [-1 1]]]}
-   {:type      :I
-    :colar     Color/RED
-    :rotations [[[-2 0]
-                 [-1 0]
-                 [0 0]
-                 [1 0]]
-                [[0 2]
-                 [0 1]
-                 [0 0]
-                 [0 -1]]]}
-   {:type      :T
-    :colar     Color/BLUE
-    :rotations [[[0 1]
-                 [1 0]
-                 [0 0]
-                 [-1 0]]
-                [[0 0]
-                 [0 1]
-                 [0 -1]
-                 [-1 0]]
-                [[-1 0]
-                 [0 0]
-                 [1 0]
-                 [0 -1]]
-                [[0 0]
-                 [0 1]
-                 [0 -1]
-                 [1 0]]]}
-   ;todo: finish S
-   ;todo: add Z, J and L
-   {:type      :S
-    :color     Color/SCARLET
-    :rotations [[[0 0]
-                 [1 0]
-                 [0 -1]
-                 [-1 -1]]]}])
+  [{:type     :O
+    :color    Color/GREEN
+    :vertices [[0 0]
+               [0 1]
+               [-1 0]
+               [-1 1]]}
+   {:type     :I
+    :color    Color/RED
+    :vertices [[-2 0]
+               [-1 0]
+               [0 0]
+               [1 0]]}
+   {:type     :T
+    :color    Color/BLUE
+    :vertices [[0 1]
+               [1 0]
+               [0 0]
+               [-1 0]]}
+   {:type     :S
+    :color    Color/MAROON
+    :vertices [[0 0]
+               [1 0]
+               [0 -1]
+               [-1 -1]]}
+   {:type     :Z
+    :color    Color/FIREBRICK
+    :vertices [[0 0]
+               [-1 0]
+               [0 -1]
+               [1 -1]]}
+   {:type     :L
+    :color    Color/SCARLET
+    :vertices [[0 0]
+               [0 1]
+               [0 2]
+               [1 0]]}
+   {:type     :J
+    :color    Color/LIME
+    :vertices [[0 0]
+               [1 0]
+               [-1 0]
+               [-1 1]]
+    }])
 
 
 (defn- draw-grid [shape-renderer rect-size line-thickness x-offset
@@ -119,12 +127,14 @@
   (.draw font sprite-batch (str "FPS=" @fps) (float 20) (float 20))
   (.end sprite-batch))
 
-(defn random-piece []
-  {:vertices [[4 19]
-              [5 19]
-              [4 20]
-              [5 20]]
-   :color    Color/BLUE})
+(defn random-piece [[spawn-x spawn-y]]
+  (-> pieces
+      shuffle
+      first
+      (update :vertices (fn [verts]
+                          (map #(vector (+ (first %) spawn-x)
+                                        (+ (second %) spawn-y))
+                               verts)))))
 
 (defn collision?
   "returns true if the piece shares a vertex with any of the pieces or
@@ -154,7 +164,7 @@
         hit-right-wall?
         hit-bottom-wall?)))
 
-(defn- move-piece [pieces piece [direction-x direction-y :as direction] num-cols]
+(defn- move-piece [pieces piece [direction-x direction-y :as direction] num-cols piece-spawn-point]
   (let [new-piece   (update piece :vertices
                             (fn [vertices]
                               (map
@@ -166,7 +176,7 @@
         going-down? (= direction [0 -1])]
     (cond
       (and collided? going-down?) [(conj pieces piece)
-                                   (random-piece)]
+                                   (random-piece piece-spawn-point)]
       collided? [pieces piece]
       :else [pieces
              new-piece])))
@@ -180,6 +190,7 @@
                        num-rows
                        piece
                        pieces
+                       piece-spawn-point
                        timer] :as state}]
   (let [^OrthographicCamera camera (.getCamera view-port)
         rect-size                  (/ world-height num-rows)
@@ -190,7 +201,7 @@
         new-timer                  (+ timer delta-time)
         [new-pieces new-piece new-timer] (if (>= new-timer move-time)
                                            (conj
-                                             (move-piece pieces piece [0 -1] num-cols)
+                                             (move-piece pieces piece [0 -1] num-cols piece-spawn-point)
                                              (- new-timer move-time))
                                            [pieces piece new-timer])]
     (.glClearColor Gdx/gl 0 0 0 1)
@@ -217,7 +228,7 @@
 (defn- key-down
   [key-code
    {:keys [game] :as context}
-   {:keys [pieces piece num-cols] :as state}
+   {:keys [pieces piece num-cols piece-spawn-point] :as state}
    create-game-screen]
   (println "typed in game screen" key-code Input$Keys/SPACE
            (= key-code Input$Keys/LEFT)
@@ -227,35 +238,24 @@
                                       state)
     (= key-code Input$Keys/LEFT) (let [
                                        _ (prn "move piece left")
-                                       [new-pieces new-piece] (move-piece pieces piece [-1 0] num-cols)]
+                                       [new-pieces new-piece] (move-piece pieces piece [-1 0] num-cols piece-spawn-point)]
                                    (assoc state :pieces new-pieces
                                                 :piece new-piece))
     (= key-code Input$Keys/RIGHT) (let [_ (prn "move piece right")
-                                        [new-pieces new-piece] (move-piece pieces piece [1 0] num-cols)]
+                                        [new-pieces new-piece] (move-piece pieces piece [1 0] num-cols piece-spawn-point)]
                                     (assoc state :pieces new-pieces
                                                  :piece new-piece))
     :else state))
 
 (defn create [{:keys [view-ports] :as context} create-game-screen]
-  (let [state (atom {:view-port (first view-ports)
-                     :pieces    [#_#_{:vertices [[4 1]
-                                                 [5 1]
-                                                 [4 0]
-                                                 [5 0]]
-                                      :color    Color/SALMON}
-          {:vertices [[6 0]
-                      [7 0]
-                      [8 0]
-                      [9 0]]
-           :color    Color/FOREST}]
-                     :piece     {:vertices [[6 19]
-                                            [7 19]
-                                            [8 19]
-                                            [9 19]]
-                                 :color    Color/OLIVE}
-                     :timer     0
-                     :num-rows  20
-                     :num-cols  10})]
+  (let [piece-spawn-point [5 20]
+        state             (atom {:view-port         (first view-ports)
+                                 :pieces            []
+                                 :piece             (random-piece piece-spawn-point)
+                                 :timer             0
+                                 :num-rows          20
+                                 :num-cols          10
+                                 :piece-spawn-point piece-spawn-point})]
     (proxy [Screen] []
       (render [delta]
         (swap! state #(render (assoc context :delta-time delta) %)))

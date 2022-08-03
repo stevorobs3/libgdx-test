@@ -36,43 +36,43 @@
 
 (def pieces
   [{:type     :O
-    :color    Color/GREEN
+    :color    Color/ROYAL
     :vertices [[0 0]
                [0 1]
                [-1 0]
                [-1 1]]}
    {:type     :I
-    :color    Color/RED
+    :color    Color/FIREBRICK
     :vertices [[-2 0]
                [-1 0]
                [0 0]
                [1 0]]}
    {:type     :T
-    :color    Color/BLUE
+    :color    Color/GOLDENROD
     :vertices [[0 1]
                [1 0]
                [0 0]
                [-1 0]]}
    {:type     :S
-    :color    Color/MAROON
+    :color    Color/FOREST
     :vertices [[0 0]
                [1 0]
                [0 -1]
                [-1 -1]]}
    {:type     :Z
-    :color    Color/FIREBRICK
+    :color    Color/TEAL
     :vertices [[0 0]
                [-1 0]
                [0 -1]
                [1 -1]]}
    {:type     :L
-    :color    Color/SCARLET
+    :color    Color/MAROON
     :vertices [[0 0]
                [0 1]
                [0 2]
                [1 0]]}
    {:type     :J
-    :color    Color/LIME
+    :color    Color/LIGHT_GRAY
     :vertices [[0 0]
                [1 0]
                [-1 0]

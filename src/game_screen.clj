@@ -47,10 +47,7 @@
   (let [piece-spawn-point [5 19]
         num-rows          20
         num-cols          10
-        state             (atom {:pieces               []
-                                 :piece                (tetris/random-piece piece-spawn-point)
-                                 :timer                0
-                                 :num-rows             num-rows
+        state             (atom {:num-rows             num-rows
                                  :num-cols             num-cols
                                  :move-time            1
                                  :grid-line-thickness  4

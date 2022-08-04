@@ -156,8 +156,14 @@
                          piece
                          pieces
                          piece-spawn-point
-                         timer] :as state} delta-time]
-  (let [new-timer (+ timer delta-time)
+                         timer]
+                  :as   state} delta-time]
+  (let [
+        ;; defaults for start of game
+        pieces    (or pieces [])
+        piece     (or piece (random-piece piece-spawn-point))
+        timer     (or timer 0)
+        new-timer (+ timer delta-time)
         new-state (if (>= new-timer move-time)
                     (let [[new-pieces new-piece] (tetris/move-piece pieces piece [0 -1] num-cols piece-spawn-point)
                           complete-rows (find-complete-rows new-pieces num-cols)]

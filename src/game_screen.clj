@@ -94,7 +94,13 @@
                    outline-color))
     (.end shape-renderer)))
 
-(defn- draw-piece [shape-renderer color rect-size line-thickness x-offset vertices]
+(defn- draw-piece
+  [shape-renderer
+   color
+   rect-size
+   line-thickness
+   x-offset
+   vertices]
   (.begin shape-renderer ShapeRenderer$ShapeType/Filled)
   (doseq [[x y] vertices]
 
@@ -126,20 +132,27 @@
   (.draw font sprite-batch (str "FPS=" @fps) (float 20) (float 20))
   (.end sprite-batch))
 
-(defn random-piece [[spawn-x spawn-y]]
+(defn- normalise-vertices
+  "return a piece with position = 0,0 and vertices offset from there"
+  [{:keys [position] :as piece}]
+  (-> piece
+      (update :vertices (fn [verts]
+                          (map #(vector (+ (first %) (first position))
+                                        (+ (second %) (second position)))
+                               verts)))
+      (assoc :position [0 0])))
+
+(defn random-piece [piece-spawn-point]
   (-> pieces
       shuffle
       first
-      (update :vertices (fn [verts]
-                          (map #(vector (+ (first %) spawn-x)
-                                        (+ (second %) spawn-y))
-                               verts)))))
+      (assoc :position piece-spawn-point)))
 
 (defn collision?
   "returns true if the piece shares a vertex with any of the pieces or
    any of the left, bottom or right walls"
   [pieces piece num-cols]
-  (let [piece-vertices   (set (:vertices piece))
+  (let [piece-vertices   (-> piece normalise-vertices :vertices set)
         all-vertices     (->> pieces
                               (mapcat :vertices)
                               (into #{}))
@@ -164,25 +177,20 @@
         hit-bottom-wall?)))
 
 (defn- move-piece [pieces piece [direction-x direction-y :as direction] num-cols piece-spawn-point]
-  (let [new-piece   (update piece :vertices
-                            (fn [vertices]
-                              (map
-                                (fn [[x y]]
-                                  [(+ x direction-x)
-                                   (+ y direction-y)])
-                                vertices)))
+  (let [new-piece   (update piece :position (fn [[x y]]
+                                              [(+ x direction-x)
+                                               (+ y direction-y)]))
         collided?   (collision? pieces new-piece num-cols)
         going-down? (= direction [0 -1])]
     (cond
-      (and collided? going-down?) [(conj pieces piece)
+      (and collided? going-down?) [(conj pieces (normalise-vertices piece))
                                    (random-piece piece-spawn-point)]
       collided? [pieces piece]
-      :else [pieces
-             new-piece])))
+      :else [pieces new-piece])))
 
 (defn- rotate-piece [pieces piece num-cols]
   (let [new-piece (update piece :vertices rotate-90)
-        _ (prn (:vertices piece) "->" (:vertices new-piece))
+        _         (prn (:vertices piece) "->" (:vertices new-piece))
         collided? (collision? pieces new-piece num-cols)]
     (if collided? piece new-piece)))
 
@@ -193,6 +201,7 @@
                        ^Viewport view-port] :as _context}
                {:keys [num-cols
                        num-rows
+                       move-time
                        piece
                        pieces
                        piece-spawn-point
@@ -202,7 +211,6 @@
         grid-line-thickness        4
         piece-line-thickness       2
         x-offset                   (- (/ world-width 2) (/ (* num-cols rect-size) 2))
-        move-time                  0.1
         new-timer                  (+ timer delta-time)
         [new-pieces new-piece new-timer] (if (>= new-timer move-time)
                                            (conj
@@ -215,7 +223,7 @@
     (draw-grid shape-renderer rect-size grid-line-thickness x-offset
                num-rows num-cols)
 
-    (doseq [{:keys [color vertices] :as _piece} (conj new-pieces new-piece)]
+    (doseq [{:keys [color vertices] :as _piece} (conj new-pieces (normalise-vertices new-piece))]
       (draw-piece shape-renderer
                   color rect-size piece-line-thickness x-offset
                   vertices))
@@ -236,8 +244,7 @@
    {:keys [pieces piece num-cols piece-spawn-point] :as state}
    create-game-screen]
   (println "typed in game screen" key-code Input$Keys/SPACE
-           (= key-code Input$Keys/LEFT)
-           )
+           (= key-code Input$Keys/LEFT))
   (cond
     (= key-code Input$Keys/SPACE) (do (.setScreen game (create-game-screen context))
                                       state)
@@ -264,6 +271,7 @@
                                  :timer             0
                                  :num-rows          20
                                  :num-cols          10
+                                 :move-time         1
                                  :piece-spawn-point piece-spawn-point})]
     (proxy [Screen] []
       (render [delta]

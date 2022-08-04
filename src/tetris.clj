@@ -180,7 +180,12 @@
         _             (prn "clearing pieces" pieces)
         new-pieces    (->> pieces
                            (map #(update % :vertices (fn [vertices]
-                                                       (remove (fn [[_ y]] (row-complete? y)) vertices))))
+                                                       (->> vertices
+                                                            (remove (fn [[_ y]] (row-complete? y)))
+                                                            (map (fn [[x y]]
+                                                                   (let [num-rows-to-drop (count (filter (fn [r] (> y r)) complete-rows))]
+                                                                     [x (- y num-rows-to-drop)])))
+                                                            ))))
                            (filter #(seq (:vertices %))))]
 
     (assoc state :pieces new-pieces

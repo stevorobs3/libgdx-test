@@ -38,8 +38,8 @@
     (.setScreen game (create-game-screen context)))
   state)
 
-(defn create [{:keys [view-ports] :as context} create-game-screen]
-  (let [state (atom {:view-port (first view-ports)})]
+(defn create [context create-game-screen]
+  (let [state (atom {})]
     (proxy [Screen] []
       (render [delta]
         (swap! state #(render (assoc context :delta-time delta) %)))

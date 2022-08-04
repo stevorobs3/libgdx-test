@@ -158,14 +158,16 @@
                          piece-spawn-point
                          timer] :as state} delta-time]
   (let [new-timer (+ timer delta-time)
-        [new-pieces new-piece new-timer] (if (>= new-timer move-time)
-                                           (let [next-piece (tetris/move-piece pieces piece [0 -1] num-cols piece-spawn-point)]
-                                             (prn "complete rows are" (find-complete-rows (first next-piece) num-cols))
+        new-state (if (>= new-timer move-time)
+                    (let [[new-pieces new-piece] (tetris/move-piece pieces piece [0 -1] num-cols piece-spawn-point)
+                          complete-rows (find-complete-rows new-pieces num-cols)]
+                      (prn "complete state" complete-rows)
 
-                                             (conj
-                                               next-piece
-                                               (- new-timer move-time)))
-                                           [pieces piece new-timer])]
-    (assoc state :pieces new-pieces
-                 :piece new-piece
-                 :timer new-timer)))
+                      {:pieces new-pieces
+                       :piece  new-piece
+                       :timer  (- new-timer move-time)})
+                    {:pieces pieces
+                     :piece  piece
+                     :timer  new-timer})]
+    (merge state
+           new-state)))

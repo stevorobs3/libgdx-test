@@ -2,12 +2,11 @@
   (:require [clojure.set :as set])
   (:import (com.badlogic.gdx Screen Gdx InputAdapter Input$Keys)
            (com.badlogic.gdx.graphics GL20 OrthographicCamera Color)
-           (com.badlogic.gdx.graphics.g2d BitmapFont SpriteBatch GlyphLayout)
+           (com.badlogic.gdx.graphics.g2d BitmapFont SpriteBatch)
            (com.badlogic.gdx.utils.viewport Viewport)
            (com.badlogic.gdx.graphics.glutils ShapeRenderer ShapeRenderer$ShapeType)
            (com.badlogic.gdx.math Vector2)))
 
-;todo: probably pull .begin / .end outside of this method to a higher level?
 ;todo: reuse vector2's
 (defn- draw-square
   [shape-renderer
@@ -75,8 +74,7 @@
     :vertices [[0 0]
                [1 0]
                [-1 0]
-               [-1 1]]
-    }])
+               [-1 1]]}])
 
 
 (defn- draw-grid [shape-renderer rect-size line-thickness x-offset
@@ -190,7 +188,6 @@
 
 (defn- rotate-piece [pieces piece num-cols]
   (let [new-piece (update piece :vertices rotate-90)
-        _         (prn (:vertices piece) "->" (:vertices new-piece))
         collided? (collision? pieces new-piece num-cols)]
     (if collided? piece new-piece)))
 
@@ -248,23 +245,16 @@
   (cond
     (= key-code Input$Keys/SPACE) (do (.setScreen game (create-game-screen context))
                                       state)
-    (= key-code Input$Keys/LEFT) (let [
-                                       _ (prn "move piece left")
-                                       [new-pieces new-piece] (move-piece pieces piece [-1 0] num-cols piece-spawn-point)]
+    (= key-code Input$Keys/LEFT) (let [[new-pieces new-piece] (move-piece pieces piece [-1 0] num-cols piece-spawn-point)]
                                    (assoc state :pieces new-pieces
                                                 :piece new-piece))
-    (= key-code Input$Keys/RIGHT) (let [_ (prn "move piece right")
-                                        [new-pieces new-piece] (move-piece pieces piece [1 0] num-cols piece-spawn-point)]
+    (= key-code Input$Keys/RIGHT) (let [[new-pieces new-piece] (move-piece pieces piece [1 0] num-cols piece-spawn-point)]
                                     (assoc state :pieces new-pieces
                                                  :piece new-piece))
-    (= key-code Input$Keys/UP) (let [_         (prn "rotate piece")
-                                     ;;todo: this will require keeping track of how far from the origin the piece is! / translating, rotating, etc!!!
-                                     new-piece (rotate-piece pieces piece num-cols)]
+    (= key-code Input$Keys/UP) (let [new-piece (rotate-piece pieces piece num-cols)]
                                  (assoc state :piece new-piece))
-    (= key-code Input$Keys/DOWN) (let [_ (prn "move piece to bottom")
-                                       [new-pieces new-piece] (loop [[pieces piece] [pieces piece]]
+    (= key-code Input$Keys/DOWN) (let [[new-pieces new-piece] (loop [[pieces piece] [pieces piece]]
                                                                 (let [[new-pieces new-piece] (move-piece pieces piece [0 -1] num-cols piece-spawn-point)]
-                                                                  (prn "moved piece to" new-piece)
                                                                   (if (> (count new-pieces) (count pieces))
                                                                     [new-pieces new-piece]
                                                                     (recur [new-pieces new-piece])

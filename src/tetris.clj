@@ -1,5 +1,6 @@
 (ns tetris
-  (:require [clojure.set :as set])
+  (:require [clojure.set :as set]
+            [medley.core :as medley])
   (:import (com.badlogic.gdx Input$Keys)
            (com.badlogic.gdx.graphics Color)))
 
@@ -141,8 +142,16 @@
                                                 :pieces new-pieces))
     :else state))
 
+(defn find-complete-rows
+  [pieces num-cols]
+  (->> pieces
+       (mapcat :vertices)
+       (group-by second)
+       (medley/map-vals count)
+       (filter #(= (second %) num-cols))
+       keys))
+
 (defn main-loop [{:keys [num-cols
-                         num-rows
                          move-time
                          piece
                          pieces
@@ -150,9 +159,12 @@
                          timer] :as state} delta-time]
   (let [new-timer (+ timer delta-time)
         [new-pieces new-piece new-timer] (if (>= new-timer move-time)
-                                           (conj
-                                             (tetris/move-piece pieces piece [0 -1] num-cols piece-spawn-point)
-                                             (- new-timer move-time))
+                                           (let [next-piece (tetris/move-piece pieces piece [0 -1] num-cols piece-spawn-point)]
+                                             (prn "complete rows are" (find-complete-rows (first next-piece) num-cols))
+
+                                             (conj
+                                               next-piece
+                                               (- new-timer move-time)))
                                            [pieces piece new-timer])]
     (assoc state :pieces new-pieces
                  :piece new-piece

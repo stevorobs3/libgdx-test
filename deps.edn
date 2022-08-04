@@ -10,6 +10,9 @@
   com.badlogicgames.gdx/gdx-bullet-platform$natives-desktop {:mvn/version "1.11.0"}
   com.badlogicgames.gdx/gdx-platform$natives-desktop        {:mvn/version "1.11.0"}
   ;; clojure
-  org.clojure/clojure                                       {:mvn/version "1.11.1"}}
+  org.clojure/clojure                                       {:mvn/version "1.11.1"}
+  ;; medley
+  medley/medley                                             {:mvn/version "1.4.0"}
+  }
  :aliases
  {:test {:extra-paths ["test"]}}}

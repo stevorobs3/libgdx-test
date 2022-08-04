@@ -1,29 +1,12 @@
 (ns game-screen
-  (:require [clojure.set :as set])
+  (:require
+    [clojure.set :as set]
+    [draw])
   (:import (com.badlogic.gdx Screen Gdx InputAdapter Input$Keys)
            (com.badlogic.gdx.graphics GL20 OrthographicCamera Color)
            (com.badlogic.gdx.graphics.g2d BitmapFont SpriteBatch)
            (com.badlogic.gdx.utils.viewport Viewport)
-           (com.badlogic.gdx.graphics.glutils ShapeRenderer ShapeRenderer$ShapeType)
-           (com.badlogic.gdx.math Vector2)))
-
-;todo: reuse vector2's
-(defn- draw-square
-  [shape-renderer
-   x y
-   width height
-   line-thickness
-   ^Color fill-color
-   ^Color outline-color]
-  (.setColor shape-renderer fill-color)
-  (.rect shape-renderer x y width height)
-  (.setColor shape-renderer outline-color)
-  (doseq [[start end] [[(Vector2. 0 0) (Vector2. 0 height)]
-                       [(Vector2. 0 height) (Vector2. width height)]
-                       [(Vector2. width height) (Vector2. width 0)]
-                       [(Vector2. width 0) (Vector2. 0 0)]]]
-    (.rectLine shape-renderer (.add start (Vector2. x y)) (.add end (Vector2. x y)) line-thickness)))
-
+           (com.badlogic.gdx.graphics.glutils ShapeRenderer)))
 
 (defn rotate-90
   ([verts]
@@ -75,60 +58,6 @@
                [1 0]
                [-1 0]
                [-1 1]]}])
-
-
-(defn- draw-grid [shape-renderer rect-size line-thickness x-offset
-                  num-rows num-cols]
-  (let [fill-color    Color/BLACK
-        outline-color Color/DARK_GRAY]
-    (.begin shape-renderer ShapeRenderer$ShapeType/Filled)
-    (doseq [i (range num-cols)
-            j (range num-rows)]
-      (draw-square shape-renderer
-                   (+ (* rect-size i) x-offset) (* rect-size j)
-                   rect-size rect-size
-                   line-thickness
-                   fill-color
-                   outline-color))
-    (.end shape-renderer)))
-
-(defn- draw-piece
-  [shape-renderer
-   color
-   rect-size
-   line-thickness
-   x-offset
-   vertices]
-  (.begin shape-renderer ShapeRenderer$ShapeType/Filled)
-  (doseq [[x y] vertices]
-
-    (draw-square shape-renderer
-                 (+ x-offset (* x rect-size)) (* y rect-size)
-                 rect-size rect-size
-                 line-thickness
-                 color
-                 Color/WHITE))
-  (.end shape-renderer))
-
-
-(def ^:private fps-timer (atom nil))
-(def ^:private fps (atom nil))
-(defn- debug-fps [^SpriteBatch sprite-batch
-                  ^BitmapFont font
-                  ^OrthographicCamera camera
-                  delta-time]
-  (.setProjectionMatrix sprite-batch (.combined camera))
-  (when (or (nil? @fps-timer) (>= @fps-timer 1))
-    (reset! fps-timer 0)
-    (reset! fps (format "%.1f" (/ 1 delta-time))))
-  (swap! fps-timer (fn [fps-timer]
-                     (+ (or fps-timer 0)
-                        delta-time)
-                     ))
-  (.begin sprite-batch)
-  (.setColor font Color/RED)
-  (.draw font sprite-batch (str "FPS=" @fps) (float 20) (float 20))
-  (.end sprite-batch))
 
 (defn- normalise-vertices
   "return a piece with position = 0,0 and vertices offset from there"
@@ -195,6 +124,8 @@
                        world-width
                        world-height
                        ^ShapeRenderer shape-renderer
+                       ^SpriteBatch sprite-batch
+                       ^BitmapFont font
                        ^Viewport view-port] :as _context}
                {:keys [num-cols
                        num-rows
@@ -217,15 +148,15 @@
     (.glClearColor Gdx/gl 0 0 0 1)
     (.glClear Gdx/gl GL20/GL_COLOR_BUFFER_BIT)
     (.setProjectionMatrix shape-renderer (.combined camera))
-    (draw-grid shape-renderer rect-size grid-line-thickness x-offset
+    (draw/grid shape-renderer rect-size grid-line-thickness x-offset
                num-rows num-cols)
 
     (doseq [{:keys [color vertices] :as _piece} (conj new-pieces (normalise-vertices new-piece))]
-      (draw-piece shape-renderer
+      (draw/piece shape-renderer
                   color rect-size piece-line-thickness x-offset
                   vertices))
 
-    #_(debug-fps sprite-batch font (.getCamera view-port) delta-time)
+    (draw/debug-fps sprite-batch font (.getCamera view-port) delta-time)
     (assoc state :pieces new-pieces
                  :piece new-piece
                  :timer new-timer)))

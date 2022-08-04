@@ -151,29 +151,55 @@
        (filter #(= (second %) num-cols))
        keys))
 
-(defn main-loop [{:keys [num-cols
-                         move-time
-                         piece
+(defn do-playing-state [{:keys [move-time num-cols piece pieces piece-spawn-point timer] :as state}
+                        delta-time]
+
+  (let [new-timer (+ timer delta-time)]
+    (if (>= new-timer move-time)
+      (let [[new-pieces new-piece] (tetris/move-piece pieces piece [0 -1] num-cols piece-spawn-point)
+            complete-rows   (find-complete-rows new-pieces num-cols)
+            next-game-state (if (seq complete-rows)
+                              ::clearing
+                              ::playing)]
+
+        (merge
+          state
+          (cond-> {:pieces     new-pieces
+                   :piece      new-piece
+                   :timer      (- new-timer move-time)
+                   :game-state next-game-state}
+                  (seq complete-rows) (assoc :complete-rows complete-rows))))
+      (merge state
+             {:pieces pieces
+              :piece  piece
+              :timer  new-timer}))))
+
+(defn do-clearing-state [{:keys [complete-rows pieces] :as state}]
+  (let [row-complete? (set complete-rows)
+        ;;todo: do this in a nice animated way!
+        _             (prn "clearing pieces" pieces)
+        new-pieces    (->> pieces
+                           (map #(update % :vertices (fn [vertices]
+                                                       (remove (fn [[_ y]] (row-complete? y)) vertices))))
+                           (filter #(seq (:vertices %))))]
+
+    (assoc state :pieces new-pieces
+                 :game-state ::playing)))
+
+(defn main-loop [{:keys [piece
                          pieces
                          piece-spawn-point
-                         timer]
+                         timer
+                         game-state]
                   :as   state} delta-time]
   (let [
         ;; defaults for start of game
-        pieces    (or pieces [])
-        piece     (or piece (random-piece piece-spawn-point))
-        timer     (or timer 0)
-        new-timer (+ timer delta-time)
-        new-state (if (>= new-timer move-time)
-                    (let [[new-pieces new-piece] (tetris/move-piece pieces piece [0 -1] num-cols piece-spawn-point)
-                          complete-rows (find-complete-rows new-pieces num-cols)]
-                      (prn "complete state" complete-rows)
-
-                      {:pieces new-pieces
-                       :piece  new-piece
-                       :timer  (- new-timer move-time)})
-                    {:pieces pieces
-                     :piece  piece
-                     :timer  new-timer})]
-    (merge state
-           new-state)))
+        {:keys [game-state]
+         :as   state-with-defaults} (assoc state :pieces (or pieces [])
+                                                 :piece (or piece
+                                                            (random-piece piece-spawn-point))
+                                                 :timer (or timer 0)
+                                                 :game-state (or game-state ::playing))]
+    (case game-state
+      ::playing (do-playing-state state-with-defaults delta-time)
+      ::clearing (do-clearing-state state))))

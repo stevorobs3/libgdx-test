@@ -31,7 +31,7 @@
    (map #(rotate-90 (first %) (second %))
         verts))
   ([x y]
-   [(- y) x]))
+   [y (- x)]))
 
 (def pieces
   [{:type     :O
@@ -66,10 +66,10 @@
                [1 -1]]}
    {:type     :L
     :color    Color/MAROON
-    :vertices [[0 0]
+    :vertices [[0 -1]
+               [0 0]
                [0 1]
-               [0 2]
-               [1 0]]}
+               [1 -1]]}
    {:type     :J
     :color    Color/LIGHT_GRAY
     :vertices [[0 0]
@@ -261,10 +261,20 @@
                                      ;;todo: this will require keeping track of how far from the origin the piece is! / translating, rotating, etc!!!
                                      new-piece (rotate-piece pieces piece num-cols)]
                                  (assoc state :piece new-piece))
+    (= key-code Input$Keys/DOWN) (let [_ (prn "move piece to bottom")
+                                       [new-pieces new-piece] (loop [[pieces piece] [pieces piece]]
+                                                                (let [[new-pieces new-piece] (move-piece pieces piece [0 -1] num-cols piece-spawn-point)]
+                                                                  (prn "moved piece to" new-piece)
+                                                                  (if (> (count new-pieces) (count pieces))
+                                                                    [new-pieces new-piece]
+                                                                    (recur [new-pieces new-piece])
+                                                                    )))]
+                                   (assoc state :piece new-piece
+                                                :pieces new-pieces))
     :else state))
 
 (defn create [{:keys [view-ports] :as context} create-game-screen]
-  (let [piece-spawn-point [5 20]
+  (let [piece-spawn-point [5 19]
         state             (atom {:view-port         (first view-ports)
                                  :pieces            []
                                  :piece             (random-piece piece-spawn-point)

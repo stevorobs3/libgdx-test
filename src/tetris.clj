@@ -99,17 +99,36 @@
         hit-right-wall?
         hit-bottom-wall?)))
 
+(defn find-complete-rows
+  [pieces num-cols]
+  (->> pieces
+       (mapcat :vertices)
+       (group-by second)
+       (medley/map-vals count)
+       (filter #(= (second %) num-cols))
+       keys))
+
 (defn- move-piece [pieces piece [direction-x direction-y :as direction] num-cols piece-spawn-point]
-  (let [new-piece   (update piece :position (fn [[x y]]
-                                              [(+ x direction-x)
-                                               (+ y direction-y)]))
-        collided?   (collision? pieces new-piece num-cols)
-        going-down? (= direction [0 -1])]
-    (cond
-      (and collided? going-down?) [(conj pieces (normalise-vertices piece))
-                                   (random-piece piece-spawn-point)]
-      collided? [pieces piece]
-      :else [pieces new-piece])))
+  (let [new-piece       (update piece :position (fn [[x y]]
+                                                  [(+ x direction-x)
+                                                   (+ y direction-y)]))
+        collided?       (collision? pieces new-piece num-cols)
+        going-down?     (= direction [0 -1])
+        new-state       (cond
+                          (and collided? going-down?) {:pieces (conj pieces (normalise-vertices piece))
+                                                       :piece  (random-piece piece-spawn-point)}
+                          collided? {:pieces pieces
+                                     :piece  piece}
+                          :else {:pieces pieces
+                                 :piece  new-piece})
+        complete-rows   (find-complete-rows (:pieces new-state) num-cols)
+        next-game-state (if (seq complete-rows)
+                          ::clearing
+                          ::playing)]
+
+    (cond-> new-state
+            (seq complete-rows) (assoc :complete-rows complete-rows)
+            :always (assoc :game-state next-game-state))))
 
 (defn- rotate-piece [pieces piece num-cols]
   (let [new-piece (update piece :vertices rotate-90)
@@ -124,51 +143,32 @@
   (cond
     (= key-code Input$Keys/SPACE) (do (.setScreen game (create-game-screen context))
                                       state)
-    (= key-code Input$Keys/LEFT) (let [[new-pieces new-piece] (move-piece pieces piece [-1 0] num-cols piece-spawn-point)]
-                                   (assoc state :pieces new-pieces
-                                                :piece new-piece))
-    (= key-code Input$Keys/RIGHT) (let [[new-pieces new-piece] (move-piece pieces piece [1 0] num-cols piece-spawn-point)]
-                                    (assoc state :pieces new-pieces
-                                                 :piece new-piece))
+    (= key-code Input$Keys/LEFT) (let [new-state (move-piece pieces piece [-1 0] num-cols piece-spawn-point)]
+                                   (merge state new-state))
+    (= key-code Input$Keys/RIGHT) (let [new-state (move-piece pieces piece [1 0] num-cols piece-spawn-point)]
+                                    (merge state new-state))
     (= key-code Input$Keys/UP) (let [new-piece (rotate-piece pieces piece num-cols)]
                                  (assoc state :piece new-piece))
-    (= key-code Input$Keys/DOWN) (let [[new-pieces new-piece] (loop [[pieces piece] [pieces piece]]
-                                                                (let [[new-pieces new-piece] (move-piece pieces piece [0 -1] num-cols piece-spawn-point)]
-                                                                  (if (> (count new-pieces) (count pieces))
-                                                                    [new-pieces new-piece]
-                                                                    (recur [new-pieces new-piece])
-                                                                    )))]
-                                   (assoc state :piece new-piece
-                                                :pieces new-pieces))
+    (= key-code Input$Keys/DOWN) (let [new-state (loop [{:keys [pieces piece]} state]
+                                                   (let [new-state (move-piece pieces piece [0 -1] num-cols piece-spawn-point)]
+                                                     (if (> (count (:pieces new-state)) (count pieces))
+                                                       new-state
+                                                       (recur new-state))))]
+                                   (merge state new-state))
     :else state))
 
-(defn find-complete-rows
-  [pieces num-cols]
-  (->> pieces
-       (mapcat :vertices)
-       (group-by second)
-       (medley/map-vals count)
-       (filter #(= (second %) num-cols))
-       keys))
+
 
 (defn do-playing-state [{:keys [move-time num-cols piece pieces piece-spawn-point timer] :as state}
                         delta-time]
 
   (let [new-timer (+ timer delta-time)]
     (if (>= new-timer move-time)
-      (let [[new-pieces new-piece] (tetris/move-piece pieces piece [0 -1] num-cols piece-spawn-point)
-            complete-rows   (find-complete-rows new-pieces num-cols)
-            next-game-state (if (seq complete-rows)
-                              ::clearing
-                              ::playing)]
-
+      (let [new-state (tetris/move-piece pieces piece [0 -1] num-cols piece-spawn-point)]
         (merge
           state
-          (cond-> {:pieces     new-pieces
-                   :piece      new-piece
-                   :timer      (- new-timer move-time)
-                   :game-state next-game-state}
-                  (seq complete-rows) (assoc :complete-rows complete-rows))))
+          new-state
+          {:timer (- new-timer move-time)}))
       (merge state
              {:pieces pieces
               :piece  piece

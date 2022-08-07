@@ -50,6 +50,7 @@
         state             (atom {:num-rows             num-rows
                                  :num-cols             num-cols
                                  :move-time            1
+                                 :fast-move-time       0.05
                                  :grid-line-thickness  4
                                  :piece-line-thickness 2
                                  :rect-size            (/ world-height num-rows)
@@ -63,6 +64,9 @@
                             (proxy [InputAdapter] []
                               (keyDown [char]
                                 (swap! state (fn [s] (tetris/key-down char context s create-game-screen)))
+                                true)
+                              (keyUp [char]
+                                (swap! state (fn [s] (tetris/key-up char context s)))
                                 true))))
       (hide []
         (println "hiding game screen")

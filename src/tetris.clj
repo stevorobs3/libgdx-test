@@ -138,23 +138,37 @@
 (defn key-down
   [key-code
    {:keys [game] :as context}
-   {:keys [pieces piece num-cols piece-spawn-point] :as state}
+   {:keys [pieces piece num-cols piece-spawn-point fast-move-time move-time] :as state}
    create-game-screen]
   (cond
-    (= key-code Input$Keys/SPACE) (do (.setScreen game (create-game-screen context))
-                                      state)
+    (= key-code Input$Keys/ESCAPE) (do (.setScreen game (create-game-screen context))
+                                       state)
     (= key-code Input$Keys/LEFT) (let [new-state (move-piece pieces piece [-1 0] num-cols piece-spawn-point)]
                                    (merge state new-state))
     (= key-code Input$Keys/RIGHT) (let [new-state (move-piece pieces piece [1 0] num-cols piece-spawn-point)]
                                     (merge state new-state))
     (= key-code Input$Keys/UP) (let [new-piece (rotate-piece pieces piece num-cols)]
                                  (assoc state :piece new-piece))
-    (= key-code Input$Keys/DOWN) (let [new-state (loop [{:keys [pieces piece]} state]
-                                                   (let [new-state (move-piece pieces piece [0 -1] num-cols piece-spawn-point)]
-                                                     (if (> (count (:pieces new-state)) (count pieces))
-                                                       new-state
-                                                       (recur new-state))))]
-                                   (merge state new-state))
+    (= key-code Input$Keys/DOWN) (assoc state :move-time fast-move-time
+                                              :old-move-time move-time
+                                              :timer 0.0)
+
+    (= key-code Input$Keys/SPACE) (let [new-state (loop [{:keys [pieces piece]} state]
+                                                    (let [new-state (move-piece pieces piece [0 -1] num-cols piece-spawn-point)]
+                                                      (if (> (count (:pieces new-state)) (count pieces))
+                                                        new-state
+                                                        (recur new-state))))]
+                                    (merge state new-state))
+    :else state))
+
+(defn key-up
+  [key-code
+   _context
+   {:keys [old-move-time] :as state}]
+  (cond
+    (= key-code Input$Keys/DOWN) (-> state
+                                     (assoc :move-time old-move-time)
+                                     (dissoc :old-move-time))
     :else state))
 
 
@@ -203,7 +217,7 @@
          :as   state-with-defaults} (assoc state :pieces (or pieces [])
                                                  :piece (or piece
                                                             (random-piece piece-spawn-point))
-                                                 :timer (or timer 0)
+                                                 :timer (or timer 0.0)
                                                  :game-state (or game-state ::playing))]
     (case game-state
       ::playing (do-playing-state state-with-defaults delta-time)

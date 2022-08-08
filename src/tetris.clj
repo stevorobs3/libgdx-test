@@ -151,8 +151,8 @@
                                  (assoc state :piece new-piece))
     (= key-code Input$Keys/DOWN) (-> state
                                      (assoc-in [:move-time :down] fast-move-time)
-                                     (assoc :old-move-time (:down move-time)
-                                            :timer 0.0))
+                                     (assoc-in [:timer :down] 0.0)
+                                     (assoc :old-move-time (:down move-time)))
 
     (= key-code Input$Keys/SPACE) (let [new-state (loop [{:keys [pieces piece]} state]
                                                     (let [new-state (move-piece pieces piece [0 -1] num-cols piece-spawn-point)]
@@ -177,13 +177,13 @@
 (defn do-playing-state [{:keys [move-time num-cols piece pieces piece-spawn-point timer] :as state}
                         delta-time]
 
-  (let [new-timer (+ timer delta-time)]
-    (if (>= new-timer (:down move-time))
+  (let [new-timer (update timer :down + delta-time)]
+    (if (>= (:down new-timer) (:down move-time))
       (let [new-state (tetris/move-piece pieces piece [0 -1] num-cols piece-spawn-point)]
         (merge
           state
           new-state
-          {:timer (- new-timer (:down move-time))}))
+          {:timer (update new-timer :down - (:down move-time))}))
       (merge state
              {:pieces pieces
               :piece  piece
@@ -216,7 +216,7 @@
          :as   state-with-defaults} (assoc state :pieces (or pieces [])
                                                  :piece (or piece
                                                             (random-piece piece-spawn-point))
-                                                 :timer (or timer 0.0)
+                                                 :timer (or timer {:down 0.0})
                                                  :game-state (or game-state ::playing))]
     (case game-state
       ::playing (do-playing-state state-with-defaults delta-time)

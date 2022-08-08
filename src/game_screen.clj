@@ -49,7 +49,8 @@
         num-cols          10
         state             (atom {:num-rows             num-rows
                                  :num-cols             num-cols
-                                 :move-time            1
+                                 :move-time            {:down     1
+                                                        :sideways 1}
                                  :fast-move-time       0.05
                                  :grid-line-thickness  4
                                  :piece-line-thickness 2

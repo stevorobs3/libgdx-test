@@ -149,9 +149,10 @@
                                     (merge state new-state))
     (= key-code Input$Keys/UP) (let [new-piece (rotate-piece pieces piece num-cols)]
                                  (assoc state :piece new-piece))
-    (= key-code Input$Keys/DOWN) (assoc state :move-time fast-move-time
-                                              :old-move-time move-time
-                                              :timer 0.0)
+    (= key-code Input$Keys/DOWN) (-> state
+                                     (assoc-in [:move-time :down] fast-move-time)
+                                     (assoc :old-move-time (:down move-time)
+                                            :timer 0.0))
 
     (= key-code Input$Keys/SPACE) (let [new-state (loop [{:keys [pieces piece]} state]
                                                     (let [new-state (move-piece pieces piece [0 -1] num-cols piece-spawn-point)]
@@ -167,7 +168,7 @@
    {:keys [old-move-time] :as state}]
   (cond
     (= key-code Input$Keys/DOWN) (-> state
-                                     (assoc :move-time old-move-time)
+                                     (assoc-in [:move-time :down] old-move-time)
                                      (dissoc :old-move-time))
     :else state))
 
@@ -177,12 +178,12 @@
                         delta-time]
 
   (let [new-timer (+ timer delta-time)]
-    (if (>= new-timer move-time)
+    (if (>= new-timer (:down move-time))
       (let [new-state (tetris/move-piece pieces piece [0 -1] num-cols piece-spawn-point)]
         (merge
           state
           new-state
-          {:timer (- new-timer move-time)}))
+          {:timer (- new-timer (:down move-time))}))
       (merge state
              {:pieces pieces
               :piece  piece
@@ -197,8 +198,7 @@
                                                             (remove (fn [[_ y]] (row-complete? y)))
                                                             (map (fn [[x y]]
                                                                    (let [num-rows-to-drop (count (filter (fn [r] (> y r)) complete-rows))]
-                                                                     [x (- y num-rows-to-drop)])))
-                                                            ))))
+                                                                     [x (- y num-rows-to-drop)])))))))
                            (filter #(seq (:vertices %))))]
 
     (assoc state :pieces new-pieces

@@ -3,7 +3,7 @@
     [draw]
     [tetris])
   (:import (com.badlogic.gdx Screen Gdx InputAdapter)
-           (com.badlogic.gdx.graphics GL20 OrthographicCamera)
+           (com.badlogic.gdx.graphics GL20 OrthographicCamera Color)
            (com.badlogic.gdx.graphics.g2d BitmapFont SpriteBatch)
            (com.badlogic.gdx.utils.viewport Viewport)
            (com.badlogic.gdx.graphics.glutils ShapeRenderer)))
@@ -28,10 +28,19 @@
     (draw/grid shape-renderer rect-size grid-line-thickness x-offset
                num-rows num-cols)
 
+    (when-let [ghost-piece (some-> piece
+                                   (tetris/move-piece-to-bottom-simple pieces num-cols))]
+      (draw/piece shape-renderer
+                  Color/GRAY
+                  rect-size piece-line-thickness x-offset
+                  (:vertices (tetris/normalise-vertices ghost-piece))))
+
     (doseq [{:keys [color vertices] :as _piece} (conj pieces (tetris/normalise-vertices piece))]
       (draw/piece shape-renderer
                   color rect-size piece-line-thickness x-offset
                   vertices))
+
+
 
     (draw/debug-fps sprite-batch font camera delta-time)
     new-state))

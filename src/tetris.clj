@@ -108,6 +108,8 @@
        (filter #(= (second %) num-cols))
        keys))
 
+;todo: tidy up this function so that it just returns the position of the new piece, and separate out
+; whether it was collided
 (defn- move-piece [pieces piece [direction-x direction-y :as direction] num-cols piece-spawn-point]
   (let [new-piece       (update piece :position (fn [[x y]]
                                                   [(+ x direction-x)
@@ -129,6 +131,28 @@
     (cond-> new-state
             (seq complete-rows) (assoc :complete-rows complete-rows)
             :always (assoc :game-state next-game-state))))
+
+(defn- move-piece-simple [pieces piece [direction-x direction-y] num-cols]
+  (let [new-piece (update piece :position (fn [[x y]]
+                                            [(+ x direction-x)
+                                             (+ y direction-y)]))]
+    (if (collision? pieces new-piece num-cols) piece new-piece)))
+
+(defn move-piece-to-bottom-simple [piece pieces num-cols]
+  (loop [piece piece]
+    (let [new-piece (move-piece-simple pieces piece [0 -1] num-cols)]
+      (if (= new-piece piece)
+        new-piece
+        (recur new-piece)))))
+
+
+(defn- move-piece-to-bottom [pieces piece num-cols piece-spawn-point]
+  (loop [{:keys [pieces piece]} {:pieces pieces
+                                 :piece  piece}]
+    (let [new-state (move-piece pieces piece [0 -1] num-cols piece-spawn-point)]
+      (if (> (count (:pieces new-state)) (count pieces))
+        new-state
+        (recur new-state)))))
 
 (defn- rotate-piece [pieces piece num-cols]
   (let [new-piece (update piece :vertices rotate-90)
@@ -154,12 +178,9 @@
                                      (assoc-in [:timer :down] 0.0)
                                      (assoc :old-move-time (:down move-time)))
 
-    (= key-code Input$Keys/SPACE) (let [new-state (loop [{:keys [pieces piece]} state]
-                                                    (let [new-state (move-piece pieces piece [0 -1] num-cols piece-spawn-point)]
-                                                      (if (> (count (:pieces new-state)) (count pieces))
-                                                        new-state
-                                                        (recur new-state))))]
-                                    (merge state new-state))
+    (= key-code Input$Keys/SPACE) (let [new-state (move-piece-to-bottom pieces piece num-cols piece-spawn-point)]
+                                    (-> state
+                                        (merge new-state)))
     :else state))
 
 (defn key-up
@@ -185,11 +206,9 @@
           new-state
           {:timer (update new-timer :down - (:down move-time))}))
       (merge state
-             {:pieces pieces
-              :piece  piece
-              :timer  new-timer}))))
+             {:timer new-timer}))))
 
-(defn do-clearing-state [{:keys [complete-rows pieces] :as state}]
+(defn do-clearing-state [{:keys [complete-rows num-cols piece pieces piece-spawn-point] :as state}]
   (let [row-complete? (set complete-rows)
         ;;todo: do this in a nice animated way!
         new-pieces    (->> pieces
@@ -204,20 +223,21 @@
     (assoc state :pieces new-pieces
                  :game-state ::playing)))
 
-(defn main-loop [{:keys [piece
+(defn main-loop [{:keys [game-state
+                         piece
                          pieces
                          piece-spawn-point
-                         timer
-                         game-state]
+                         timer]
                   :as   state} delta-time]
   (let [
         ;; defaults for start of game
+        piece       (or piece
+                        (random-piece piece-spawn-point))
         {:keys [game-state]
          :as   state-with-defaults} (assoc state :pieces (or pieces [])
-                                                 :piece (or piece
-                                                            (random-piece piece-spawn-point))
+                                                 :piece piece
                                                  :timer (or timer {:down 0.0})
                                                  :game-state (or game-state ::playing))]
     (case game-state
       ::playing (do-playing-state state-with-defaults delta-time)
-      ::clearing (do-clearing-state state))))
+      ::clearing (do-clearing-state state-with-defaults))))

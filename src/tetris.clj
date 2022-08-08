@@ -191,7 +191,6 @@
 (defn do-clearing-state [{:keys [complete-rows pieces] :as state}]
   (let [row-complete? (set complete-rows)
         ;;todo: do this in a nice animated way!
-        _             (prn "clearing pieces" pieces)
         new-pieces    (->> pieces
                            (map #(update % :vertices (fn [vertices]
                                                        (->> vertices

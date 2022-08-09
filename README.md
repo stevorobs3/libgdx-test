@@ -8,6 +8,18 @@ clj -M -m core.Game
 
 clj -M -m launcher
 
+# Controls
+## Menu screen controls:
+* Start game: Space
+
+##Game screen controls:
+* Hard drop: Space
+* Soft drop: down arrow
+* Rotate: Up arrow
+* Horizontal movement :Left and right Arrows
+* back to main menu: Esc
+
+
 # todos
 
 * Implement holding down key to move things horizontally

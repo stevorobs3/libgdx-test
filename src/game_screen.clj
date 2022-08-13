@@ -44,8 +44,6 @@
                     (:vertices (tetris/normalise-vertices ghost-piece))
                     color)))
 
-
-
     (draw/debug-fps sprite-batch font camera delta-time)
     new-state))
 

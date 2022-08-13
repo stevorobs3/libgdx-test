@@ -159,48 +159,60 @@
         collided? (collision? pieces new-piece num-cols)]
     (if collided? piece new-piece)))
 
+
+(defn piece-movement
+  [{:keys [fast-move-time
+           old-move-time
+           move-time
+           num-cols
+           piece
+           pieces
+           piece-spawn-point] :as state}
+   direction]
+  (case direction
+    :left (merge state (move-piece pieces piece [-1 0] num-cols piece-spawn-point))
+    :right (merge state (move-piece pieces piece [1 0] num-cols piece-spawn-point))
+    :up (assoc state :piece (rotate-piece pieces piece num-cols))
+    :down-speed-up (-> state
+                       (assoc-in [:move-time :down] fast-move-time)
+                       (assoc-in [:timer :down] 0.0)
+                       (assoc :old-move-time (:down move-time)))
+    :down-slow-down (-> state
+                        (assoc-in [:move-time :down] old-move-time)
+                        (dissoc :old-move-time))
+    :down (merge state (move-piece pieces piece [0 -1] num-cols piece-spawn-point))
+    :full-down (let [new-state (move-piece-to-bottom pieces piece num-cols piece-spawn-point)]
+                 (merge state new-state))))
+
 (defn key-down
   [key-code
    {:keys [game] :as context}
-   {:keys [pieces piece num-cols piece-spawn-point fast-move-time move-time] :as state}
+   state
    create-game-screen]
   (cond
     (= key-code Input$Keys/ESCAPE) (do (.setScreen game (create-game-screen context))
                                        state)
-    (= key-code Input$Keys/LEFT) (let [new-state (move-piece pieces piece [-1 0] num-cols piece-spawn-point)]
-                                   (merge state new-state))
-    (= key-code Input$Keys/RIGHT) (let [new-state (move-piece pieces piece [1 0] num-cols piece-spawn-point)]
-                                    (merge state new-state))
-    (= key-code Input$Keys/UP) (let [new-piece (rotate-piece pieces piece num-cols)]
-                                 (assoc state :piece new-piece))
-    (= key-code Input$Keys/DOWN) (-> state
-                                     (assoc-in [:move-time :down] fast-move-time)
-                                     (assoc-in [:timer :down] 0.0)
-                                     (assoc :old-move-time (:down move-time)))
-
-    (= key-code Input$Keys/SPACE) (let [new-state (move-piece-to-bottom pieces piece num-cols piece-spawn-point)]
-                                    (-> state
-                                        (merge new-state)))
+    (= key-code Input$Keys/LEFT) (piece-movement state :left)
+    (= key-code Input$Keys/RIGHT) (piece-movement state :right)
+    (= key-code Input$Keys/UP) (piece-movement state :up)
+    (= key-code Input$Keys/DOWN) (piece-movement state :down-speed-up)
+    (= key-code Input$Keys/SPACE) (piece-movement state :full-down)
     :else state))
 
 (defn key-up
   [key-code
    _context
-   {:keys [old-move-time] :as state}]
+   state]
   (cond
-    (= key-code Input$Keys/DOWN) (-> state
-                                     (assoc-in [:move-time :down] old-move-time)
-                                     (dissoc :old-move-time))
+    (= key-code Input$Keys/DOWN) (piece-movement state :down-slow-down)
     :else state))
 
-
-
-(defn do-playing-state [{:keys [move-time num-cols piece pieces piece-spawn-point timer] :as state}
+(defn do-playing-state [{:keys [move-time timer] :as state}
                         delta-time]
 
   (let [new-timer (update timer :down + delta-time)]
     (if (>= (:down new-timer) (:down move-time))
-      (let [new-state (tetris/move-piece pieces piece [0 -1] num-cols piece-spawn-point)]
+      (let [new-state (piece-movement state :down)]
         (merge
           state
           new-state
@@ -208,7 +220,7 @@
       (merge state
              {:timer new-timer}))))
 
-(defn do-clearing-state [{:keys [complete-rows num-cols piece pieces piece-spawn-point] :as state}]
+(defn do-clearing-state [{:keys [complete-rows pieces] :as state}]
   (let [row-complete? (set complete-rows)
         ;;todo: do this in a nice animated way!
         new-pieces    (->> pieces
@@ -231,8 +243,8 @@
                   :as   state} delta-time]
   (let [
         ;; defaults for start of game
-        piece       (or piece
-                        (random-piece piece-spawn-point))
+        piece (or piece
+                  (random-piece piece-spawn-point))
         {:keys [game-state]
          :as   state-with-defaults} (assoc state :pieces (or pieces [])
                                                  :piece piece

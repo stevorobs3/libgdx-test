@@ -108,18 +108,19 @@
        (filter #(= (second %) num-cols))
        keys))
 
-(defn- move-piece [pieces piece [direction-x direction-y] num-cols]
+(defn- move-piece [{:keys [pieces piece] :as state} [direction-x direction-y] num-cols]
   (let [new-piece (update piece :position (fn [[x y]]
                                             [(+ x direction-x)
                                              (+ y direction-y)]))
         collided? (collision? pieces new-piece num-cols)]
 
-    {:piece     (if collided? piece new-piece)
-     :collided? collided?}))
+    (merge state
+           {:piece     (if collided? piece new-piece)
+            :collided? collided?})))
 
-(defn move-piece-to-bottom [piece pieces num-cols]
-  (loop [{:keys [piece]} {:piece piece}]
-    (let [new-state (move-piece pieces piece [0 -1] num-cols)]
+(defn move-piece-to-bottom [state num-cols]
+  (loop [state state]
+    (let [new-state (move-piece state [0 -1] num-cols)]
       (if (:collided? new-state)
         new-state
         (recur new-state)))))
@@ -143,9 +144,10 @@
           collided? (-> (assoc :pieces (conj pieces (normalise-vertices piece)))
                         (dissoc :collided? :piece))))
 
-(defn spawn-new-piece [{:keys [piece-spawn-point piece] :as state}]
+(defn spawn-new-piece [{:keys [complete-rows piece-spawn-point piece] :as state}]
   (cond-> state
-          (nil? piece) (assoc :piece (random-piece piece-spawn-point))))
+          (and (nil? piece)
+               (empty? complete-rows)) (assoc :piece (random-piece piece-spawn-point))))
 
 (defn piece-movement
   [{:keys [fast-move-time
@@ -156,8 +158,8 @@
            pieces] :as state}
    direction]
   (case direction
-    :left (merge state (move-piece pieces piece [-1 0] num-cols))
-    :right (merge state (move-piece pieces piece [1 0] num-cols))
+    :left (move-piece state [-1 0] num-cols)
+    :right (move-piece state [1 0] num-cols)
     :up (merge state (rotate-piece pieces piece num-cols))
     :down-speed-up (-> state
                        (assoc-in [:move-time :down] fast-move-time)
@@ -167,12 +169,12 @@
                         (assoc-in [:move-time :down] old-move-time)
                         (dissoc :old-move-time))
     :down (-> state
-              (merge (move-piece pieces piece [0 -1] num-cols))
+              (move-piece [0 -1] num-cols)
               normalise-collided-piece
               (check-for-complete-rows num-cols)
               spawn-new-piece)
     :full-down (-> state
-                   (merge (move-piece-to-bottom piece pieces num-cols))
+                   (move-piece-to-bottom num-cols)
                    normalise-collided-piece
                    (check-for-complete-rows num-cols)
                    spawn-new-piece)))
@@ -182,15 +184,17 @@
    {:keys [game] :as context}
    state
    create-game-screen]
-  (cond
-    (= key-code Input$Keys/ESCAPE) (do (.setScreen game (create-game-screen context))
-                                       state)
-    (= key-code Input$Keys/LEFT) (piece-movement state :left)
-    (= key-code Input$Keys/RIGHT) (piece-movement state :right)
-    (= key-code Input$Keys/UP) (piece-movement state :up)
-    (= key-code Input$Keys/DOWN) (piece-movement state :down-speed-up)
-    (= key-code Input$Keys/SPACE) (piece-movement state :full-down)
-    :else state))
+  (if (= (:game-state state) ::playing)
+    (cond
+      (= key-code Input$Keys/ESCAPE) (do (.setScreen game (create-game-screen context))
+                                         state)
+      (= key-code Input$Keys/LEFT) (piece-movement state :left)
+      (= key-code Input$Keys/RIGHT) (piece-movement state :right)
+      (= key-code Input$Keys/UP) (piece-movement state :up)
+      (= key-code Input$Keys/DOWN) (piece-movement state :down-speed-up)
+      (= key-code Input$Keys/SPACE) (piece-movement state :full-down)
+      :else state)
+    state))
 
 (defn key-up
   [key-code
@@ -213,7 +217,7 @@
       (merge state
              {:timer new-timer}))))
 
-(defn do-clearing-state [{:keys [complete-rows pieces] :as state}]
+(defn do-clearing-state [{:keys [complete-rows pieces piece-spawn-point] :as state}]
   (let [row-complete? (set complete-rows)
         ;;todo: do this in a nice animated way!
         new-pieces    (->> pieces
@@ -223,26 +227,23 @@
                                                             (map (fn [[x y]]
                                                                    (let [num-rows-to-drop (count (filter (fn [r] (> y r)) complete-rows))]
                                                                      [x (- y num-rows-to-drop)])))))))
-                           (filter #(seq (:vertices %))))]
+                           (filter #(seq (:vertices %))))
+        piece         (random-piece piece-spawn-point)]
 
-    (assoc state :pieces new-pieces
-                 :game-state ::playing)))
+    (-> state
+        (assoc :pieces new-pieces
+               :piece piece
+               :game-state ::playing)
+        (dissoc :complete-rows))))
 
 (defn main-loop [{:keys [game-state
-                         piece
                          pieces
-                         piece-spawn-point
                          timer]
                   :as   state} delta-time]
-  (let [
-        ;; defaults for start of game
-        piece (or piece
-                  (random-piece piece-spawn-point))
-        {:keys [game-state]
+  (let [{:keys [game-state]
          :as   state-with-defaults} (assoc state :pieces (or pieces [])
-                                                 :piece piece
                                                  :timer (or timer {:down 0.0})
-                                                 :game-state (or game-state ::playing))]
+                                                 :game-state (or game-state ::clearing))]
     (case game-state
       ::playing (do-playing-state state-with-defaults delta-time)
       ::clearing (do-clearing-state state-with-defaults))))

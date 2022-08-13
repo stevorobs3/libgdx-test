@@ -34,10 +34,9 @@
                   color rect-size piece-line-thickness x-offset
                   vertices))
     ;todo: change this so that pieces comes first / pass in state???
-    (when-let [ghost-piece (some-> piece
-                                   (tetris/move-piece-to-bottom pieces num-cols)
-                                   :piece)]
-      (let [color (.cpy Color/WHITE)]
+    (when (:piece new-state)
+      (let [ghost-piece (:piece (tetris/move-piece-to-bottom new-state num-cols))
+            color       (.cpy Color/WHITE)]
         (set! (.a color) 0.25)
 
         (draw/piece shape-renderer

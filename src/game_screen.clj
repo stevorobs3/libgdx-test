@@ -23,22 +23,26 @@
         x-offset                   (- (/ world-width 2) (/ (* num-cols rect-size) 2))
         {:keys [pieces piece] :as new-state} (tetris/main-loop state delta-time)]
     (.glClearColor Gdx/gl 0 0 0 1)
-    (.glClear Gdx/gl GL20/GL_COLOR_BUFFER_BIT)
+    (.glClear Gdx/gl (bit-or GL20/GL_COLOR_BUFFER_BIT GL20/GL_DEPTH_BUFFER_BIT))
+    (.glEnable Gdx/gl GL20/GL_BLEND)
     (.setProjectionMatrix shape-renderer (.combined camera))
     (draw/grid shape-renderer rect-size grid-line-thickness x-offset
                num-rows num-cols)
-
-    (when-let [ghost-piece (some-> piece
-                                   (tetris/move-piece-to-bottom-simple pieces num-cols))]
-      (draw/piece shape-renderer
-                  Color/GRAY
-                  rect-size piece-line-thickness x-offset
-                  (:vertices (tetris/normalise-vertices ghost-piece))))
 
     (doseq [{:keys [color vertices] :as _piece} (conj pieces (tetris/normalise-vertices piece))]
       (draw/piece shape-renderer
                   color rect-size piece-line-thickness x-offset
                   vertices))
+    (when-let [ghost-piece (some-> piece
+                                   (tetris/move-piece-to-bottom-simple pieces num-cols))]
+      (let [color (.cpy Color/WHITE)]
+        (set! (.a color) 0.25)
+
+        (draw/piece shape-renderer
+                    color
+                    rect-size piece-line-thickness x-offset
+                    (:vertices (tetris/normalise-vertices ghost-piece))
+                    color)))
 
 
 

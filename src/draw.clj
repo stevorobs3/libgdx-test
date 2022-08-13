@@ -1,16 +1,16 @@
 (ns draw
   (:import (com.badlogic.gdx.graphics.g2d SpriteBatch BitmapFont)
            (com.badlogic.gdx.graphics OrthographicCamera Color)
-           (com.badlogic.gdx.graphics.glutils ShapeRenderer$ShapeType)
+           (com.badlogic.gdx.graphics.glutils ShapeRenderer$ShapeType ShapeRenderer)
            (com.badlogic.gdx.math Vector2)))
 
 
 (def ^:private fps-timer (atom nil))
 (def ^:private fps (atom nil))
 (defn debug-fps [^SpriteBatch sprite-batch
-                  ^BitmapFont font
-                  ^OrthographicCamera camera
-                  delta-time]
+                 ^BitmapFont font
+                 ^OrthographicCamera camera
+                 delta-time]
   (.setProjectionMatrix sprite-batch (.combined camera))
   (when (or (nil? @fps-timer) (>= @fps-timer 1))
     (reset! fps-timer 0)
@@ -41,10 +41,10 @@
                        [(Vector2. 0 height) (Vector2. width height)]
                        [(Vector2. width height) (Vector2. width 0)]
                        [(Vector2. width 0) (Vector2. 0 0)]]]
-    (.rectLine shape-renderer (.add start (Vector2. x y)) (.add end (Vector2. x y)) line-thickness)))
+    (.rectLine ^ShapeRenderer shape-renderer (.add start (Vector2. x y)) (.add end (Vector2. x y)) line-thickness)))
 
 (defn grid [shape-renderer rect-size line-thickness x-offset
-                  num-rows num-cols]
+            num-rows num-cols]
   (let [fill-color    Color/BLACK
         outline-color Color/DARK_GRAY]
     (.begin shape-renderer ShapeRenderer$ShapeType/Filled)
@@ -59,19 +59,33 @@
     (.end shape-renderer)))
 
 (defn piece
-  [shape-renderer
-   color
-   rect-size
-   line-thickness
-   x-offset
-   vertices]
-  (.begin shape-renderer ShapeRenderer$ShapeType/Filled)
-  (doseq [[x y] vertices]
+  ([shape-renderer
+    color
+    rect-size
+    line-thickness
+    x-offset
+    vertices]
+   (piece shape-renderer
+          color
+          rect-size
+          line-thickness
+          x-offset
+          vertices
+          Color/WHITE))
+  ([shape-renderer
+    color
+    rect-size
+    line-thickness
+    x-offset
+    vertices
+    line-color]
+   (.begin shape-renderer ShapeRenderer$ShapeType/Filled)
+   (doseq [[x y] vertices]
 
-    (square shape-renderer
-            (+ x-offset (* x rect-size)) (* y rect-size)
-            rect-size rect-size
-            line-thickness
-            color
-            Color/WHITE))
-  (.end shape-renderer))
+     (square shape-renderer
+             (+ x-offset (* x rect-size)) (* y rect-size)
+             rect-size rect-size
+             line-thickness
+             color
+             line-color))
+   (.end shape-renderer)))

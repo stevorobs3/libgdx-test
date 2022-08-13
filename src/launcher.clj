@@ -25,6 +25,6 @@
     (LwjglApplication. game config)))
 
 (comment
-  (do (require '[launcher]
+   (do (require '[launcher]
                '[core])
       (launcher/-main)))

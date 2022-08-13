@@ -111,26 +111,18 @@
 ;todo: tidy up this function so that it just returns the position of the new piece, and separate out
 ; whether it was collided
 (defn- move-piece [pieces piece [direction-x direction-y :as direction] num-cols piece-spawn-point]
-  (let [new-piece       (update piece :position (fn [[x y]]
-                                                  [(+ x direction-x)
-                                                   (+ y direction-y)]))
-        collided?       (collision? pieces new-piece num-cols)
-        going-down?     (= direction [0 -1])
-        new-state       (cond
-                          (and collided? going-down?) {:pieces (conj pieces (normalise-vertices piece))
-                                                       :piece  (random-piece piece-spawn-point)}
-                          collided? {:pieces pieces
-                                     :piece  piece}
-                          :else {:pieces pieces
-                                 :piece  new-piece})
-        complete-rows   (find-complete-rows (:pieces new-state) num-cols)
-        next-game-state (if (seq complete-rows)
-                          ::clearing
-                          ::playing)]
-
-    (cond-> new-state
-            (seq complete-rows) (assoc :complete-rows complete-rows)
-            :always (assoc :game-state next-game-state))))
+  (let [new-piece   (update piece :position (fn [[x y]]
+                                              [(+ x direction-x)
+                                               (+ y direction-y)]))
+        collided?   (collision? pieces new-piece num-cols)
+        going-down? (= direction [0 -1])]
+    (cond
+      (and collided? going-down?) {:pieces (conj pieces (normalise-vertices piece))
+                                   :piece  (random-piece piece-spawn-point)}
+      collided? {:pieces pieces
+                 :piece  piece}
+      :else {:pieces pieces
+             :piece  new-piece})))
 
 (defn- move-piece-simple [pieces piece [direction-x direction-y] num-cols]
   (let [new-piece (update piece :position (fn [[x y]]
@@ -169,20 +161,34 @@
            pieces
            piece-spawn-point] :as state}
    direction]
-  (case direction
-    :left (merge state (move-piece pieces piece [-1 0] num-cols piece-spawn-point))
-    :right (merge state (move-piece pieces piece [1 0] num-cols piece-spawn-point))
-    :up (assoc state :piece (rotate-piece pieces piece num-cols))
-    :down-speed-up (-> state
-                       (assoc-in [:move-time :down] fast-move-time)
-                       (assoc-in [:timer :down] 0.0)
-                       (assoc :old-move-time (:down move-time)))
-    :down-slow-down (-> state
-                        (assoc-in [:move-time :down] old-move-time)
-                        (dissoc :old-move-time))
-    :down (merge state (move-piece pieces piece [0 -1] num-cols piece-spawn-point))
-    :full-down (let [new-state (move-piece-to-bottom pieces piece num-cols piece-spawn-point)]
-                 (merge state new-state))))
+
+  (letfn [(check-for-complete-rows [{:keys [pieces] :as new-state}]
+            (let [complete-rows   (find-complete-rows pieces num-cols)
+                  next-game-state (if (seq complete-rows)
+                                    ::clearing
+                                    ::playing)]
+              (cond-> new-state
+                      (seq complete-rows) (assoc :complete-rows complete-rows)
+                      :always (assoc :game-state next-game-state))))]
+
+    (case direction
+      :left (merge state (move-piece pieces piece [-1 0] num-cols piece-spawn-point))
+      :right (merge state (move-piece pieces piece [1 0] num-cols piece-spawn-point))
+      :up (assoc state :piece (rotate-piece pieces piece num-cols))
+      :down-speed-up (-> state
+                         (assoc-in [:move-time :down] fast-move-time)
+                         (assoc-in [:timer :down] 0.0)
+                         (assoc :old-move-time (:down move-time)))
+      :down-slow-down (-> state
+                          (assoc-in [:move-time :down] old-move-time)
+                          (dissoc :old-move-time))
+      :down (-> state
+                (merge (move-piece pieces piece [0 -1] num-cols piece-spawn-point))
+                check-for-complete-rows)
+      :full-down (-> state
+                     (merge (move-piece-to-bottom pieces piece num-cols piece-spawn-point))
+                     check-for-complete-rows)))
+  )
 
 (defn key-down
   [key-code

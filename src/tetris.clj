@@ -168,6 +168,23 @@
     :down-slow-down (-> state
                         (assoc-in [:move-time :down] old-move-time)
                         (dissoc :old-move-time))
+    ;todo: deduplicate
+    :start-left-auto-move (-> state
+                              (assoc-in [:move-time :sideways] fast-move-time)
+                              (assoc :move-direction :left)
+                              (assoc-in [:timer :sideways] 0.0))
+    :stop-left-auto-move (-> state
+                             (medley/dissoc-in [:move-time :sideways]
+                                               [:timer :sideways]
+                                               [:move-direction]))
+    :start-right-auto-move (-> state
+                               (assoc-in [:move-time :sideways] fast-move-time)
+                               (assoc :move-direction :right)
+                               (assoc-in [:timer :sideways] 0.0))
+    :stop-right-auto-move (-> state
+                              (medley/dissoc-in [:move-time :sideways]
+                                                [:timer :sideways]
+                                                [:move-direction]))
     :down (-> state
               (move-piece [0 -1] num-cols)
               normalise-collided-piece
@@ -188,10 +205,16 @@
     (cond
       (= key-code Input$Keys/ESCAPE) (do (.setScreen game (create-game-screen context))
                                          state)
-      (= key-code Input$Keys/LEFT) (piece-movement state :left)
-      (= key-code Input$Keys/RIGHT) (piece-movement state :right)
+      (= key-code Input$Keys/LEFT) (-> state
+                                       (piece-movement :left)
+                                       (piece-movement :start-left-auto-move))
+      (= key-code Input$Keys/RIGHT) (-> state
+                                        (piece-movement :right)
+                                        (piece-movement :start-right-auto-move))
       (= key-code Input$Keys/UP) (piece-movement state :up)
-      (= key-code Input$Keys/DOWN) (piece-movement state :down-speed-up)
+      (= key-code Input$Keys/DOWN) (-> state
+                                       (piece-movement :down)
+                                       (piece-movement :down-speed-up))
       (= key-code Input$Keys/SPACE) (piece-movement state :full-down)
       :else state)
     state))
@@ -200,22 +223,41 @@
   [key-code
    _context
    state]
-  (cond
-    (= key-code Input$Keys/DOWN) (piece-movement state :down-slow-down)
-    :else state))
+  (if (= (:game-state state) ::playing)
+    (cond
+      (= key-code Input$Keys/DOWN) (piece-movement state :down-slow-down)
+      (= key-code Input$Keys/LEFT) (piece-movement state :stop-left-auto-move)
+      (= key-code Input$Keys/RIGHT) (piece-movement state :stop-right-auto-move)
+      :else state)
+    state))
 
-(defn do-playing-state [{:keys [move-time timer] :as state}
+(defn- move-downwards [state move-time timer]
+  (let [new-state (piece-movement state :down)]
+    (merge
+      state
+      new-state
+      {:timer (update timer :down - (:down move-time))})))
+
+;todo: fix race condition when switching between left and right movement!
+;todo: make side movement slower
+(defn- move-sideways [state move-time timer move-direction]
+  (let [new-state (piece-movement state move-direction)]
+    (merge
+      state
+      new-state
+      {:timer (update timer :sideways - (:sideways move-time))})))
+
+(defn do-playing-state [{:keys [move-time timer move-direction] :as state}
                         delta-time]
 
-  (let [new-timer (update timer :down + delta-time)]
-    (if (>= (:down new-timer) (:down move-time))
-      (let [new-state (piece-movement state :down)]
-        (merge
-          state
-          new-state
-          {:timer (update new-timer :down - (:down move-time))}))
-      (merge state
-             {:timer new-timer}))))
+  (let [new-timer                    (cond-> timer
+                                             move-direction (update :sideways + delta-time)
+                                             :always (update :down + delta-time))
+        down-move-time-exceeded?     (>= (:down new-timer) (:down move-time))
+        sideways-move-time-exceeded? (and (:sideways new-timer) (>= (:sideways new-timer) (:sideways move-time)))]
+    (cond-> (merge state {:timer new-timer})
+            down-move-time-exceeded? (move-downwards move-time new-timer)
+            sideways-move-time-exceeded? (move-sideways move-time new-timer move-direction))))
 
 (defn do-clearing-state [{:keys [complete-rows pieces piece-spawn-point] :as state}]
   (let [row-complete? (set complete-rows)

@@ -59,15 +59,16 @@
   (let [piece-spawn-point [5 19]
         num-rows          20
         num-cols          10
-        state             (atom {:num-rows             num-rows
-                                 :num-cols             num-cols
-                                 :move-time            {:down     1
-                                                        :sideways 1}
-                                 :fast-move-time       0.05
-                                 :grid-line-thickness  4
-                                 :piece-line-thickness 2
-                                 :rect-size            (/ world-height num-rows)
-                                 :piece-spawn-point    piece-spawn-point})]
+        state             (atom {:num-rows                num-rows
+                                 :num-cols                num-cols
+                                 :move-time               {:down     1
+                                                           :sideways 1}
+                                 :fast-move-time          0.05
+                                 :sideways-fast-move-time 0.1
+                                 :grid-line-thickness     4
+                                 :piece-line-thickness    2
+                                 :rect-size               (/ world-height num-rows)
+                                 :piece-spawn-point       piece-spawn-point})]
     (proxy [Screen] []
       (render [delta]
         (swap! state #(render (assoc context :delta-time delta) %)))

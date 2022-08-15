@@ -151,6 +151,7 @@
 
 (defn piece-movement
   [{:keys [fast-move-time
+           sideways-fast-move-time
            old-move-time
            move-time
            num-cols
@@ -170,7 +171,7 @@
                         (dissoc :old-move-time))
     ;todo: deduplicate
     :start-left-auto-move (-> state
-                              (assoc-in [:move-time :sideways] fast-move-time)
+                              (assoc-in [:move-time :sideways] sideways-fast-move-time)
                               (assoc :move-direction :left)
                               (assoc-in [:timer :sideways] 0.0))
     :stop-left-auto-move (-> state
@@ -178,7 +179,7 @@
                                                [:timer :sideways]
                                                [:move-direction]))
     :start-right-auto-move (-> state
-                               (assoc-in [:move-time :sideways] fast-move-time)
+                               (assoc-in [:move-time :sideways] sideways-fast-move-time)
                                (assoc :move-direction :right)
                                (assoc-in [:timer :sideways] 0.0))
     :stop-right-auto-move (-> state
@@ -222,12 +223,16 @@
 (defn key-up
   [key-code
    _context
-   state]
+   {:keys [move-direction] :as state}]
   (if (= (:game-state state) ::playing)
     (cond
       (= key-code Input$Keys/DOWN) (piece-movement state :down-slow-down)
-      (= key-code Input$Keys/LEFT) (piece-movement state :stop-left-auto-move)
-      (= key-code Input$Keys/RIGHT) (piece-movement state :stop-right-auto-move)
+      (= key-code Input$Keys/LEFT) (if (= move-direction :left)
+                                     (piece-movement state :stop-left-auto-move)
+                                     state)
+      (= key-code Input$Keys/RIGHT) (if (= move-direction :right)
+                                      (piece-movement state :stop-right-auto-move)
+                                      state)
       :else state)
     state))
 
@@ -238,8 +243,6 @@
       new-state
       {:timer (update timer :down - (:down move-time))})))
 
-;todo: fix race condition when switching between left and right movement!
-;todo: make side movement slower
 (defn- move-sideways [state move-time timer move-direction]
   (let [new-state (piece-movement state move-direction)]
     (merge

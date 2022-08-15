@@ -75,7 +75,7 @@
                                  :move-time               {:down     1
                                                            :sideways 1}
                                  :fast-move-time          0.05
-                                 :sideways-fast-move-time 0.1
+                                 :sideways-fast-move-time 0.2
                                  :grid-line-thickness     4
                                  :piece-line-thickness    2
                                  :rect-size               (/ world-height num-rows)

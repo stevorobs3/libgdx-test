@@ -1,5 +1,5 @@
 (ns draw
-  (:import (com.badlogic.gdx.graphics.g2d SpriteBatch BitmapFont)
+  (:import (com.badlogic.gdx.graphics.g2d SpriteBatch BitmapFont TextureRegion)
            (com.badlogic.gdx.graphics OrthographicCamera Color)
            (com.badlogic.gdx.graphics.glutils ShapeRenderer$ShapeType ShapeRenderer)
            (com.badlogic.gdx.math Vector2)))
@@ -43,6 +43,19 @@
                        [(Vector2. width 0) (Vector2. 0 0)]]]
     (.rectLine ^ShapeRenderer shape-renderer (.add start (Vector2. x y)) (.add end (Vector2. x y)) line-thickness)))
 
+(defn- hollow-square
+  [shape-renderer
+   x y
+   width height
+   line-thickness
+   ^Color outline-color]
+  (.setColor shape-renderer outline-color)
+  (doseq [[start end] [[(Vector2. 0 0) (Vector2. 0 height)]
+                       [(Vector2. 0 height) (Vector2. width height)]
+                       [(Vector2. width height) (Vector2. width 0)]
+                       [(Vector2. width 0) (Vector2. 0 0)]]]
+    (.rectLine ^ShapeRenderer shape-renderer (.add start (Vector2. x y)) (.add end (Vector2. x y)) line-thickness)))
+
 (defn grid [shape-renderer rect-size line-thickness x-offset
             num-rows num-cols]
   (let [fill-color    Color/BLACK
@@ -58,34 +71,33 @@
               outline-color))
     (.end shape-renderer)))
 
+(defn piece-old
+  [shape-renderer
+   color
+   rect-size
+   line-thickness
+   x-offset
+   vertices]
+  (.begin shape-renderer ShapeRenderer$ShapeType/Filled)
+  (doseq [[x y] vertices]
+
+    (hollow-square shape-renderer
+                   (+ x-offset (* x rect-size))
+                   (* y rect-size)
+                   rect-size rect-size
+                   line-thickness
+                   color))
+  (.end shape-renderer))
+
 (defn piece
-  ([shape-renderer
-    color
+  ([^SpriteBatch sprite-batch
+    ^TextureRegion tile
     rect-size
-    line-thickness
     x-offset
     vertices]
-   (piece shape-renderer
-          color
-          rect-size
-          line-thickness
-          x-offset
-          vertices
-          Color/WHITE))
-  ([shape-renderer
-    color
-    rect-size
-    line-thickness
-    x-offset
-    vertices
-    line-color]
-   (.begin shape-renderer ShapeRenderer$ShapeType/Filled)
    (doseq [[x y] vertices]
-
-     (square shape-renderer
-             (+ x-offset (* x rect-size)) (* y rect-size)
-             rect-size rect-size
-             line-thickness
-             color
-             line-color))
-   (.end shape-renderer)))
+     (.draw sprite-batch tile
+            (float (+ x-offset (* x rect-size)))
+            (float (* y rect-size))
+            (float rect-size)
+            (float rect-size)))))

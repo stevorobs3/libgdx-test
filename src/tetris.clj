@@ -13,43 +13,43 @@
 
 (def pieces
   [{:type     :O
-    :color    Color/ROYAL
+    :index    0
     :vertices [[0 0]
                [0 1]
                [-1 0]
                [-1 1]]}
    {:type     :I
-    :color    Color/FIREBRICK
+    :index    1
     :vertices [[-2 0]
                [-1 0]
                [0 0]
                [1 0]]}
    {:type     :T
-    :color    Color/GOLDENROD
+    :index    2
     :vertices [[0 1]
                [1 0]
                [0 0]
                [-1 0]]}
    {:type     :S
-    :color    Color/FOREST
+    :index    3
     :vertices [[0 0]
                [1 0]
                [0 -1]
                [-1 -1]]}
    {:type     :Z
-    :color    Color/TEAL
+    :index    4
     :vertices [[0 0]
                [-1 0]
                [0 -1]
                [1 -1]]}
    {:type     :L
-    :color    Color/MAROON
+    :index    5
     :vertices [[0 -1]
                [0 0]
                [0 1]
                [1 -1]]}
    {:type     :J
-    :color    Color/LIGHT_GRAY
+    :index    6
     :vertices [[0 0]
                [1 0]
                [-1 0]
@@ -59,10 +59,10 @@
   "return a piece with position = 0,0 and vertices offset from there"
   [{:keys [position] :as piece}]
   (-> piece
-      (update :vertices (fn [verts]
+      (update :vertices (fn [vertices]
                           (map #(vector (+ (first %) (first position))
                                         (+ (second %) (second position)))
-                               verts)))
+                               vertices)))
       (assoc :position [0 0])))
 
 (defn random-piece [piece-spawn-point]
@@ -70,6 +70,12 @@
       shuffle
       first
       (assoc :position piece-spawn-point)))
+
+(defn all-pieces []
+  (->> (zipmap [0 2 3 6 8 10 12] pieces)
+       (map (fn [[index piece]]
+              (assoc piece :position [2 index])))
+       (map normalise-vertices)))
 
 (defn collision?
   "returns true if the piece shares a vertex with any of the pieces or

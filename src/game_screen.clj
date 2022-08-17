@@ -46,8 +46,8 @@
     ;todo: change this so that pieces comes first / pass in state???
     (when (:piece new-state)
       (let [ghost-piece (:piece (tetris/move-piece-to-bottom new-state num-cols))
-            color       (.cpy Color/WHITE)]
-        (set! (.a color) 0.25)
+            color       (.cpy Color/GRAY)]
+        (set! (.a color) 0.5)
 
         (draw/piece-old shape-renderer
                         color

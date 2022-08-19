@@ -6,7 +6,8 @@
            (com.badlogic.gdx.graphics GL20 OrthographicCamera Color Texture)
            (com.badlogic.gdx.graphics.g2d BitmapFont SpriteBatch TextureRegion)
            (com.badlogic.gdx.utils.viewport Viewport)
-           (com.badlogic.gdx.graphics.glutils ShapeRenderer)))
+           (com.badlogic.gdx.graphics.glutils ShapeRenderer)
+           (com.badlogic.gdx.math Vector2)))
 
 (defn- render [{:keys [delta-time
                        ^ShapeRenderer shape-renderer
@@ -21,6 +22,9 @@
                        grid-outline-color
                        piece-line-thickness
                        ghost-piece-color
+                       grid-square-vertices
+                       start-origin
+                       end-origin
                        tiles
                        ^float rect-size
                        x-offset] :as state}]
@@ -34,15 +38,16 @@
     (.setProjectionMatrix shape-renderer (.combined camera))
     (draw/grid shape-renderer rect-size grid-line-thickness x-offset
                num-rows num-cols
+               grid-square-vertices
                grid-fill-color
                grid-outline-color)
 
     (when-let [ghost-piece (:piece (tetris/move-piece-to-bottom new-state num-cols))]
 
-      (draw/piece-old shape-renderer
-                      ghost-piece-color
-                      rect-size piece-line-thickness x-offset
-                      (:vertices (tetris/normalise-vertices ghost-piece))))
+      (draw/ghost-piece shape-renderer
+                        ghost-piece-color
+                        rect-size piece-line-thickness x-offset
+                        (:vertices (tetris/normalise-vertices ghost-piece))))
     (.begin sprite-batch)
     (doseq [{:keys [index vertices] :as _piece} (conj pieces (tetris/normalise-vertices piece))]
       (draw/piece sprite-batch
@@ -72,8 +77,10 @@
         state             (atom {:background-color        (.cpy Color/GRAY)
                                  :num-rows                num-rows
                                  :num-cols                num-cols
-                                 :move-time               {:down     1
-                                                           :sideways 1}
+                                 :move-time               {:down      1
+                                                           :sideways  1
+                                                           ;todo: this isn't a move-time, this should be done async instead, possibly just using futures...
+                                                           :full-down 0.2}
                                  :fast-move-time          0.05
                                  :sideways-fast-move-time 0.2
                                  :grid-line-thickness     4
@@ -89,7 +96,11 @@
                                  :ghost-piece-color       (let [color (.cpy Color/WHITE)]
                                                             (set! (.a color) 0.4)
                                                             color)
-                                 :x-offset                (- (/ world-width 2) (/ (* num-cols rect-size) 2))})]
+                                 :x-offset                (- (/ world-width 2) (/ (* num-cols rect-size) 2))
+                                 :grid-square-vertices    [[(Vector2. 0 0) (Vector2. 0 rect-size)]
+                                                           [(Vector2. 0 rect-size) (Vector2. rect-size rect-size)]
+                                                           [(Vector2. rect-size rect-size) (Vector2. rect-size 0)]
+                                                           [(Vector2. rect-size 0) (Vector2. 0 0)]]})]
     (proxy [Screen] []
       (render [delta]
         (swap! state #(render (assoc context :delta-time delta) %)))

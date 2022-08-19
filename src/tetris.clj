@@ -198,11 +198,14 @@
               normalise-collided-piece
               (check-for-complete-rows num-cols)
               spawn-new-piece)
-    :full-down (-> state
-                   (move-piece-to-bottom num-cols)
-                   normalise-collided-piece
-                   (check-for-complete-rows num-cols)
-                   spawn-new-piece)))
+    :full-down (if (get-in state [:timer :full-down])       ;; ignore full down while full down timer is running.
+                 state
+                 (-> state
+                     (move-piece-to-bottom num-cols)
+                     normalise-collided-piece
+                     (check-for-complete-rows num-cols)
+                     spawn-new-piece
+                     (assoc-in [:timer :full-down] 0.0)))))
 
 (defn key-down
   [key-code
@@ -257,17 +260,24 @@
       new-state
       {:timer (update timer :sideways - (:sideways move-time))})))
 
+;todo: find a much nicer way to do this async move time  stuff  -  maybe with thread/sleep + futures +
+; state swapping?
 (defn do-playing-state [{:keys [move-time timer move-direction] :as state}
                         delta-time]
 
   (let [new-timer                    (cond-> timer
                                              move-direction (update :sideways + delta-time)
+                                             (some? (get timer :full-down)) (update :full-down + delta-time)
                                              :always (update :down + delta-time))
-        down-move-time-exceeded?     (>= (:down new-timer) (:down move-time))
-        sideways-move-time-exceeded? (and (:sideways new-timer) (>= (:sideways new-timer) (:sideways move-time)))]
+        timer-exceeded?              (fn [timer-type]
+                                       (and (timer-type new-timer) (>= (timer-type new-timer) (timer-type move-time))))
+        down-move-time-exceeded?     (timer-exceeded? :down)
+        sideways-move-time-exceeded? (timer-exceeded? :sideways)
+        full-down-time-exceeded?     (timer-exceeded? :full-down)]
     (cond-> (merge state {:timer new-timer})
             down-move-time-exceeded? (move-downwards move-time new-timer)
-            sideways-move-time-exceeded? (move-sideways move-time new-timer move-direction))))
+            sideways-move-time-exceeded? (move-sideways move-time new-timer move-direction)
+            full-down-time-exceeded? (medley/dissoc-in [:timer :full-down]))))
 
 (defn do-clearing-state [{:keys [complete-rows pieces piece-spawn-point] :as state}]
   (let [row-complete? (set complete-rows)

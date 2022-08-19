@@ -4,7 +4,6 @@
            (com.badlogic.gdx.graphics.glutils ShapeRenderer$ShapeType ShapeRenderer)
            (com.badlogic.gdx.math Vector2)))
 
-
 (def ^:private fps-timer (atom nil))
 (def ^:private fps (atom nil))
 (defn debug-fps [^SpriteBatch sprite-batch
@@ -24,24 +23,27 @@
   (.draw font sprite-batch (str "FPS=" @fps) (float 20) (float 20))
   (.end sprite-batch))
 
-
-
-;todo: reuse vector2's
 (defn- square
   [shape-renderer
    x y
    width height
    line-thickness
+   grid-square-vertices
    ^Color fill-color
    ^Color outline-color]
   (.setColor shape-renderer fill-color)
   (.rect shape-renderer x y width height)
   (.setColor shape-renderer outline-color)
-  (doseq [[start end] [[(Vector2. 0 0) (Vector2. 0 height)]
-                       [(Vector2. 0 height) (Vector2. width height)]
-                       [(Vector2. width height) (Vector2. width 0)]
-                       [(Vector2. width 0) (Vector2. 0 0)]]]
-    (.rectLine ^ShapeRenderer shape-renderer (.add start (Vector2. x y)) (.add end (Vector2. x y)) line-thickness)))
+  (let [start-origin (Vector2. x y)
+        end-origin   (Vector2. x y)
+        reset-vec    (fn [v]
+                       (set! (.x v) x)
+                       (set! (.y v) y)
+                       v)]
+    (doseq [[start end] grid-square-vertices]
+      (.rectLine ^ShapeRenderer shape-renderer
+                 (.add (reset-vec start-origin) start)
+                 (.add (reset-vec end-origin) end) line-thickness))))
 
 (defn- hollow-square
   [shape-renderer
@@ -57,7 +59,8 @@
     (.rectLine ^ShapeRenderer shape-renderer (.add start (Vector2. x y)) (.add end (Vector2. x y)) line-thickness)))
 
 (defn grid [shape-renderer rect-size line-thickness x-offset
-            num-rows num-cols fill-color outline-color]
+            num-rows num-cols
+            grid-square-vertices fill-color outline-color]
   (.begin shape-renderer ShapeRenderer$ShapeType/Filled)
   (doseq [i (range num-cols)
           j (range num-rows)]
@@ -65,11 +68,12 @@
             (+ (* rect-size i) x-offset) (* rect-size j)
             rect-size rect-size
             line-thickness
+            grid-square-vertices
             fill-color
             outline-color))
   (.end shape-renderer))
 
-(defn piece-old
+(defn ghost-piece
   [shape-renderer
    color
    rect-size

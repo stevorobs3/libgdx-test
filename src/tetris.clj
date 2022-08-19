@@ -125,11 +125,12 @@
             :collided? collided?})))
 
 (defn move-piece-to-bottom [state num-cols]
-  (loop [state state]
-    (let [new-state (move-piece state [0 -1] num-cols)]
-      (if (:collided? new-state)
-        new-state
-        (recur new-state)))))
+  (when (:piece state)
+    (loop [state state]
+      (let [new-state (move-piece state [0 -1] num-cols)]
+        (if (:collided? new-state)
+          new-state
+          (recur new-state))))))
 
 (defn- rotate-piece [pieces piece num-cols]
   (let [new-piece (update piece :vertices rotate-90)

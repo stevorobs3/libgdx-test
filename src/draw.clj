@@ -82,11 +82,11 @@
 
 (defn ghost-piece
   [shape-renderer
-   color
-   rect-size
-   line-thickness
-   x-offset
-   vertices]
+   vertices
+   {:keys [color
+           line-thickness
+           rect-size
+           x-offset]}]
   (.begin shape-renderer ShapeRenderer$ShapeType/Filled)
   (doseq [[x y] vertices]
 

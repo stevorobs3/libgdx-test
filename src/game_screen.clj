@@ -14,17 +14,16 @@
                        ^SpriteBatch sprite-batch
                        ^BitmapFont font
                        ^Viewport view-port] :as _context}
-               {:keys [colors
-                       piece-line-thickness
+               {:keys [background-color
                        grid
                        tiles] :as state}]
   (let [^OrthographicCamera camera (.getCamera view-port)
         {:keys [pieces piece] :as new-state} (tetris/main-loop state delta-time)]
     (.glClearColor Gdx/gl
-                   (.r (:background colors))
-                   (.g (:background colors))
-                   (.b (:background colors))
-                   (.a (:background colors)))
+                   (.r background-color)
+                   (.g background-color)
+                   (.b background-color)
+                   (.a background-color))
     (.glClear Gdx/gl GL20/GL_COLOR_BUFFER_BIT)
     (.glEnable Gdx/gl GL20/GL_BLEND)
     (.glBlendFunc Gdx/gl GL20/GL_SRC_ALPHA GL20/GL_ONE_MINUS_SRC_ALPHA)
@@ -33,11 +32,9 @@
     (draw/grid shape-renderer grid)
 
     (when-let [ghost-piece (:piece (tetris/move-piece-to-bottom new-state (:num-cols grid)))]
-
       (draw/ghost-piece shape-renderer
-                        (:ghost-piece colors)
-                        (:rect-size grid) piece-line-thickness (:x-offset grid)
-                        (:vertices (tetris/normalise-vertices ghost-piece))))
+                        (:vertices (tetris/normalise-vertices ghost-piece))
+                        (:ghost-piece state)))
     (.begin sprite-batch)
     (doseq [{:keys [index vertices] :as _piece} (conj pieces (tetris/normalise-vertices piece))]
       (draw/piece sprite-batch
@@ -60,15 +57,11 @@
         num-rows          20
         num-cols          10
         rect-size         (/ world-height num-rows)
+        x-offset          (- (/ world-width 2) (/ (* num-cols rect-size) 2))
         tile-texture      (Texture. "tetris-tiles.png")
         tiles             (map (fn [number]
                                  (TextureRegion. tile-texture (int (+ (* 13 20) 8)) (int (+ (* number 20) 8)) (int 16) (int 16)))
                                [5 9 19 27 29 35 49])
-        colors            {:background  (.cpy Color/GRAY)
-                           :ghost-piece (let [color (.cpy Color/WHITE)]
-                                          (set! (.a color) 0.4)
-                                          color)}
-        x-offset          (- (/ world-width 2) (/ (* num-cols rect-size) 2))
         grid              {:line-thickness  4
                            ;todo: think of better name for this
                            :square-vertices [[(Vector2. 0 0) (Vector2. 0 rect-size)]
@@ -84,7 +77,13 @@
                            :outline-color   (let [color (.cpy Color/DARK_GRAY)]
                                               (set! (.a color) 0.7)
                                               color)}
-        state             (atom {:colors                  colors
+        ghost-piece       {:color          (let [color (.cpy Color/WHITE)]
+                                             (set! (.a color) 0.4)
+                                             color)
+                           :line-thickness 2
+                           :rect-size      rect-size
+                           :x-offset       x-offset}
+        state             (atom {:background-color        (.cpy Color/GRAY)
                                  :move-time               {:down      1
                                                            :sideways  1
                                                            ;todo: this isn't a move-time, this should be done async instead, possibly just using futures...
@@ -94,9 +93,9 @@
                                  :piece-line-thickness    2
                                  :piece-spawn-point       piece-spawn-point
                                  :tiles                   tiles
-                                 :tile-texture            tile-texture
                                  :x-offset                x-offset
-                                 :grid                    grid})]
+                                 :grid                    grid
+                                 :ghost-piece             ghost-piece})]
     (proxy [Screen] []
       (render [delta]
         (swap! state #(render (assoc context :delta-time delta) %)))

@@ -29,8 +29,8 @@
    width height
    line-thickness
    grid-square-vertices
-   ^Color fill-color
-   ^Color outline-color]
+   fill-color
+   outline-color]
   (.setColor shape-renderer fill-color)
   (.rect shape-renderer x y width height)
   (.setColor shape-renderer outline-color)

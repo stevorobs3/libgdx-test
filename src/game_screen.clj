@@ -62,27 +62,30 @@
         tiles             (map (fn [number]
                                  (TextureRegion. tile-texture (int (+ (* 13 20) 8)) (int (+ (* number 20) 8)) (int 16) (int 16)))
                                [5 9 19 27 29 35 49])
-        grid              {:line-thickness  4
-                           ;todo: think of better name for this
-                           :square-vertices [[(Vector2. 0 0) (Vector2. 0 rect-size)]
-                                             [(Vector2. 0 rect-size) (Vector2. rect-size rect-size)]
-                                             [(Vector2. rect-size rect-size) (Vector2. rect-size 0)]
-                                             [(Vector2. rect-size 0) (Vector2. 0 0)]]
-                           :num-rows        num-rows
-                           :num-cols        num-cols
-                           :rect-size       rect-size
+        cell-vertices     [(Vector2. 0 0)
+                           (Vector2. 0 rect-size)
+                           (Vector2. rect-size rect-size)
+                           (Vector2. rect-size 0)]
+        cell-vertex-pairs (conj (partition 2 1 cell-vertices)
+                                ((juxt last first) cell-vertices))
+        grid              {:line-thickness    4
+                           :cell-vertex-pairs cell-vertex-pairs
+                           :num-rows          num-rows
+                           :num-cols          num-cols
+                           :rect-size         rect-size
                            ;todo: better name for this too!
-                           :x-offset        x-offset
-                           :fill-color      (.cpy Color/BLACK)
-                           :outline-color   (let [color (.cpy Color/DARK_GRAY)]
-                                              (set! (.a color) 0.7)
-                                              color)}
-        ghost-piece       {:color          (let [color (.cpy Color/WHITE)]
-                                             (set! (.a color) 0.4)
-                                             color)
-                           :line-thickness 2
-                           :rect-size      rect-size
-                           :x-offset       x-offset}
+                           :x-offset          x-offset
+                           :fill-color        (.cpy Color/BLACK)
+                           :outline-color     (let [color (.cpy Color/DARK_GRAY)]
+                                                (set! (.a color) 0.7)
+                                                color)}
+        ghost-piece       {:color             (let [color (.cpy Color/WHITE)]
+                                                (set! (.a color) 0.4)
+                                                color)
+                           :line-thickness    2
+                           :rect-size         rect-size
+                           :x-offset          x-offset
+                           :cell-vertex-pairs cell-vertex-pairs}
         state             (atom {:background-color        (.cpy Color/GRAY)
                                  :move-time               {:down      1
                                                            :sideways  1

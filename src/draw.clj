@@ -1,8 +1,9 @@
 (ns draw
-  (:import (com.badlogic.gdx.graphics.g2d SpriteBatch BitmapFont TextureRegion)
+  (:import (com.badlogic.gdx.graphics.g2d SpriteBatch BitmapFont TextureRegion GlyphLayout)
            (com.badlogic.gdx.graphics OrthographicCamera Color)
            (com.badlogic.gdx.graphics.glutils ShapeRenderer$ShapeType ShapeRenderer)
-           (com.badlogic.gdx.math Vector2)))
+           (com.badlogic.gdx.math Vector2)
+           (com.badlogic.gdx.utils Align)))
 
 (def ^:private fps-timer (atom nil))
 (def ^:private fps (atom nil))
@@ -22,6 +23,37 @@
   (.setColor font Color/RED)
   (.draw font sprite-batch (str "FPS=" @fps) (float 20) (float 20))
   (.end sprite-batch))
+
+(defn score [^SpriteBatch sprite-batch
+             ^BitmapFont font
+             ^OrthographicCamera camera
+             {:keys [points level lines-cleared] :as _score}
+             world-width
+             world-height
+             rect-size]
+  ;todo: use scene 2d ui? + make it pretty.
+  (let [points-text                       (str " Score: " points)
+        level-text                        (str " Level: " level)
+        lines-cleared-text                (str " Lines: " lines-cleared)
+        grid-x                            (float (+ (* rect-size 5) (/ world-width 2)))
+        text-width                        (float (- world-width (* 10 rect-size)))
+        ^GlyphLayout points-layout        (GlyphLayout. font points-text Color/BLUE text-width Align/left true)
+        ^GlyphLayout level-layout         (GlyphLayout. font level-text Color/BLUE text-width Align/left true)
+        ^GlyphLayout lines-cleared-layout (GlyphLayout. font lines-cleared-text Color/BLUE text-width Align/left true)]
+    (.setProjectionMatrix sprite-batch (.combined camera))
+    (.begin sprite-batch)
+    (.setScale (.getData font) 2)
+    (.draw font sprite-batch points-layout grid-x
+           (float (- world-height
+                     (.height points-layout))))
+    (.draw font sprite-batch level-layout grid-x
+           (float (- world-height
+                     (* 3 (.height points-layout)))))
+    (.draw font sprite-batch lines-cleared-layout grid-x
+           (float (- world-height
+                     (* 5 (.height points-layout)))))
+
+    (.end sprite-batch)))
 
 (defn- cell
   [shape-renderer

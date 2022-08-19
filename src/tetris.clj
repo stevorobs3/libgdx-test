@@ -1,6 +1,7 @@
 (ns tetris
   (:require [clojure.set :as set]
-            [medley.core :as medley])
+            [medley.core :as medley]
+            [scoring])
   (:import (com.badlogic.gdx Input$Keys)
            (com.badlogic.gdx.graphics Color)))
 
@@ -297,7 +298,8 @@
         (assoc :pieces new-pieces
                :piece piece
                :game-state ::playing)
-        (dissoc :complete-rows))))
+        (dissoc :complete-rows)
+        (update :score scoring/clear-lines (count complete-rows)))))
 
 (defn main-loop [{:keys [game-state
                          pieces

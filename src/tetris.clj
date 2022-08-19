@@ -161,51 +161,52 @@
            sideways-fast-move-time
            old-move-time
            move-time
-           num-cols
+           grid
            piece
            pieces] :as state}
    direction]
-  (case direction
-    :left (move-piece state [-1 0] num-cols)
-    :right (move-piece state [1 0] num-cols)
-    :up (merge state (rotate-piece pieces piece num-cols))
-    :down-speed-up (-> state
-                       (assoc-in [:move-time :down] fast-move-time)
-                       (assoc-in [:timer :down] 0.0)
-                       (assoc :old-move-time (:down move-time)))
-    :down-slow-down (-> state
-                        (assoc-in [:move-time :down] old-move-time)
-                        (dissoc :old-move-time))
-    ;todo: deduplicate
-    :start-left-auto-move (-> state
-                              (assoc-in [:move-time :sideways] sideways-fast-move-time)
-                              (assoc :move-direction :left)
-                              (assoc-in [:timer :sideways] 0.0))
-    :stop-left-auto-move (-> state
-                             (medley/dissoc-in [:move-time :sideways]
-                                               [:timer :sideways]
-                                               [:move-direction]))
-    :start-right-auto-move (-> state
-                               (assoc-in [:move-time :sideways] sideways-fast-move-time)
-                               (assoc :move-direction :right)
-                               (assoc-in [:timer :sideways] 0.0))
-    :stop-right-auto-move (-> state
-                              (medley/dissoc-in [:move-time :sideways]
-                                                [:timer :sideways]
-                                                [:move-direction]))
-    :down (-> state
-              (move-piece [0 -1] num-cols)
-              normalise-collided-piece
-              (check-for-complete-rows num-cols)
-              spawn-new-piece)
-    :full-down (if (get-in state [:timer :full-down])       ;; ignore full down while full down timer is running.
-                 state
-                 (-> state
-                     (move-piece-to-bottom num-cols)
-                     normalise-collided-piece
-                     (check-for-complete-rows num-cols)
-                     spawn-new-piece
-                     (assoc-in [:timer :full-down] 0.0)))))
+  (let [{:keys [num-cols]} grid]
+    (case direction
+      :left (move-piece state [-1 0] num-cols)
+      :right (move-piece state [1 0] num-cols)
+      :up (merge state (rotate-piece pieces piece num-cols))
+      :down-speed-up (-> state
+                         (assoc-in [:move-time :down] fast-move-time)
+                         (assoc-in [:timer :down] 0.0)
+                         (assoc :old-move-time (:down move-time)))
+      :down-slow-down (-> state
+                          (assoc-in [:move-time :down] old-move-time)
+                          (dissoc :old-move-time))
+      ;todo: deduplicate
+      :start-left-auto-move (-> state
+                                (assoc-in [:move-time :sideways] sideways-fast-move-time)
+                                (assoc :move-direction :left)
+                                (assoc-in [:timer :sideways] 0.0))
+      :stop-left-auto-move (-> state
+                               (medley/dissoc-in [:move-time :sideways]
+                                                 [:timer :sideways]
+                                                 [:move-direction]))
+      :start-right-auto-move (-> state
+                                 (assoc-in [:move-time :sideways] sideways-fast-move-time)
+                                 (assoc :move-direction :right)
+                                 (assoc-in [:timer :sideways] 0.0))
+      :stop-right-auto-move (-> state
+                                (medley/dissoc-in [:move-time :sideways]
+                                                  [:timer :sideways]
+                                                  [:move-direction]))
+      :down (-> state
+                (move-piece [0 -1] num-cols)
+                normalise-collided-piece
+                (check-for-complete-rows num-cols)
+                spawn-new-piece)
+      :full-down (if (get-in state [:timer :full-down])     ;; ignore full down while full down timer is running.
+                   state
+                   (-> state
+                       (move-piece-to-bottom num-cols)
+                       normalise-collided-piece
+                       (check-for-complete-rows num-cols)
+                       spawn-new-piece
+                       (assoc-in [:timer :full-down] 0.0))))))
 
 (defn key-down
   [key-code

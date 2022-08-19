@@ -58,9 +58,16 @@
                        [(Vector2. width 0) (Vector2. 0 0)]]]
     (.rectLine ^ShapeRenderer shape-renderer (.add start (Vector2. x y)) (.add end (Vector2. x y)) line-thickness)))
 
-(defn grid [shape-renderer rect-size line-thickness x-offset
-            num-rows num-cols
-            grid-square-vertices fill-color outline-color]
+(defn grid
+  [shape-renderer
+   {:keys [line-thickness
+           num-rows
+           num-cols
+           rect-size
+           square-vertices
+           x-offset
+           fill-color
+           outline-color] :as _config}]
   (.begin shape-renderer ShapeRenderer$ShapeType/Filled)
   (doseq [i (range num-cols)
           j (range num-rows)]
@@ -68,7 +75,7 @@
             (+ (* rect-size i) x-offset) (* rect-size j)
             rect-size rect-size
             line-thickness
-            grid-square-vertices
+            square-vertices
             fill-color
             outline-color))
   (.end shape-renderer))

@@ -293,24 +293,30 @@
             full-down-time-exceeded? (medley/dissoc-in [:timer :full-down]))))
 
 (defn do-clearing-state [{:keys [complete-rows pieces piece-spawn-point] :as state}]
-  (let [row-complete? (set complete-rows)
+  (let [row-complete?    (set complete-rows)
         ;;todo: do this in a nice animated way!
-        new-pieces    (->> pieces
-                           (map #(update % :vertices (fn [vertices]
-                                                       (->> vertices
-                                                            (remove (fn [[_ y]] (row-complete? y)))
-                                                            (map (fn [[x y]]
-                                                                   (let [num-rows-to-drop (count (filter (fn [r] (> y r)) complete-rows))]
-                                                                     [x (- y num-rows-to-drop)])))))))
-                           (filter #(seq (:vertices %))))
-        piece         (random-piece piece-spawn-point)]
+        new-pieces       (->> pieces
+                              (map #(update % :vertices (fn [vertices]
+                                                          (->> vertices
+                                                               (remove (fn [[_ y]] (row-complete? y)))
+                                                               (map (fn [[x y]]
+                                                                      (let [num-rows-to-drop (count (filter (fn [r] (> y r)) complete-rows))]
+                                                                        [x (- y num-rows-to-drop)])))))))
+                              (filter #(seq (:vertices %))))
+        piece            (random-piece piece-spawn-point)
+        update-move-time (fn [{{:keys [level]} :score
+                               :as             new-state}]
+                           (when (not= (get-in state [:score :level]) level)
+                             (println "changing  move time" level (scoring/level->down-move-time level)))
+                           (assoc-in new-state [:move-time :down] (scoring/level->down-move-time level)))]
 
     (-> state
         (assoc :pieces new-pieces
                :piece piece
                :game-state ::playing)
         (dissoc :complete-rows)
-        (update :score scoring/clear-lines (count complete-rows)))))
+        (update :score scoring/clear-lines (count complete-rows))
+        update-move-time)))
 
 (defn do-game-over-state
   [{:keys [game create-end-game-screen] :as context}

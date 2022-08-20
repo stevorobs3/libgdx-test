@@ -98,7 +98,7 @@
                            :cell-vertex-pairs cell-vertex-pairs}
         state             (atom {:background-color        (.cpy Color/GRAY)
                                  ;todo: move times need to be made simpler
-                                 :move-time               {:down      1
+                                 :move-time               {:down      (scoring/level->down-move-time 0)
                                                            :sideways  1
                                                            ;todo: this isn't a move-time, this should be done async instead, possibly just using futures...
                                                            :full-down 0.2}

@@ -51,7 +51,7 @@
   {:points                     0
    :level                      0
    :lines-cleared              0
-   :lines-remaining-this-level (scoring/level->lines 0)})
+   :lines-remaining-this-level (level->lines 0)})
 
 (defn points-for-clearing-rows [row-count]
   (case row-count

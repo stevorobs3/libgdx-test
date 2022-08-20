@@ -72,7 +72,7 @@
       first
       (assoc :position piece-spawn-point)))
 
-(defn all-pieces []
+(def all-pieces
   (->> (zipmap [0 2 3 6 8 10 12] pieces)
        (map (fn [[index piece]]
               (assoc piece :position [2 index])))
@@ -157,6 +157,15 @@
           (and (nil? piece)
                (empty? complete-rows)) (assoc :piece (random-piece piece-spawn-point))))
 
+(defn check-for-game-over
+  [{:keys [pieces grid] :as state}]
+  (let [game-over? (->> pieces
+                        (mapcat :vertices)
+                        (filter #(>= (second %) (:num-rows grid)))
+                        (not= []))]
+    (cond-> state
+            game-over? (assoc :game-state ::game-over))))
+
 (defn piece-movement
   [{:keys [fast-move-time
            sideways-fast-move-time
@@ -199,7 +208,8 @@
                 (move-piece [0 -1] num-cols)
                 normalise-collided-piece
                 (check-for-complete-rows num-cols)
-                spawn-new-piece)
+                spawn-new-piece
+                check-for-game-over)
       :full-down (if (get-in state [:timer :full-down])     ;; ignore full down while full down timer is running.
                    state
                    (-> state
@@ -207,16 +217,17 @@
                        normalise-collided-piece
                        (check-for-complete-rows num-cols)
                        spawn-new-piece
-                       (assoc-in [:timer :full-down] 0.0))))))
+                       (assoc-in [:timer :full-down] 0.0)
+                       check-for-game-over)))))
 
 (defn key-down
   [key-code
    {:keys [game] :as context}
    state
-   create-game-screen]
+   create-menu-screen]
   (if (= (:game-state state) ::playing)
     (cond
-      (= key-code Input$Keys/ESCAPE) (do (.setScreen game (create-game-screen context))
+      (= key-code Input$Keys/ESCAPE) (do (.setScreen game (create-menu-screen context))
                                          state)
       (= key-code Input$Keys/LEFT) (-> state
                                        (piece-movement :left)
@@ -301,7 +312,14 @@
         (dissoc :complete-rows)
         (update :score scoring/clear-lines (count complete-rows)))))
 
-(defn main-loop [{:keys [game-state
+(defn do-game-over-state
+  [{:keys [game create-end-game-screen] :as context}
+   {:keys [score] :as state}]
+  (.setScreen game (create-end-game-screen context score))
+  state)
+
+(defn main-loop [context
+                 {:keys [game-state
                          pieces
                          timer]
                   :as   state} delta-time]
@@ -311,4 +329,5 @@
                                                  :game-state (or game-state ::clearing))]
     (case game-state
       ::playing (do-playing-state state-with-defaults delta-time)
-      ::clearing (do-clearing-state state-with-defaults))))
+      ::clearing (do-clearing-state state-with-defaults)
+      ::game-over (do-game-over-state context state-with-defaults))))

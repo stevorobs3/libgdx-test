@@ -16,13 +16,13 @@
                        ^BitmapFont font
                        ^Viewport view-port
                        world-width
-                       world-height] :as _context}
+                       world-height] :as context}
                {:keys [background-color
                        grid
                        tiles
                        score] :as state}]
   (let [^OrthographicCamera camera (.getCamera view-port)
-        {:keys [pieces piece] :as new-state} (tetris/main-loop state delta-time)]
+        {:keys [pieces piece] :as new-state} (tetris/main-loop context state delta-time)]
     (.glClearColor Gdx/gl
                    (.r background-color)
                    (.g background-color)
@@ -59,8 +59,11 @@
   (.update view-port width height true)
   state)
 
-(defn create [{:keys [world-height world-width] :as context} create-game-screen]
-  (let [piece-spawn-point [5 19]
+(defn create
+  [{:keys [world-height world-width] :as context}
+   create-menu-screen
+   create-end-game-screen]
+  (let [piece-spawn-point [5 20]
         num-rows          20
         num-cols          10
         rect-size         (/ world-height num-rows)
@@ -110,13 +113,14 @@
                                  :score                   scoring/initial-score})]
     (proxy [Screen] []
       (render [delta]
-        (swap! state #(render (assoc context :delta-time delta) %)))
+        (swap! state #(render (assoc context :delta-time delta
+                                             :create-end-game-screen create-end-game-screen) %)))
       (show []
         (println "showing game screen")
         (.setInputProcessor Gdx/input
                             (proxy [InputAdapter] []
                               (keyDown [char]
-                                (swap! state (fn [s] (tetris/key-down char context s create-game-screen)))
+                                (swap! state (fn [s] (tetris/key-down char context s create-menu-screen)))
                                 true)
                               (keyUp [char]
                                 (swap! state (fn [s] (tetris/key-up char context s)))

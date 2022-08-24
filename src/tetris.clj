@@ -33,22 +33,22 @@
                [-1 0]]}
    {:type     :S
     :index    3
-    :vertices [[0 0]
-               [1 0]
-               [0 -1]
-               [-1 -1]]}
+    :vertices [[0 1]
+               [1 1]
+               [0 0]
+               [-1 0]]}
    {:type     :Z
     :index    4
-    :vertices [[0 0]
-               [-1 0]
-               [0 -1]
-               [1 -1]]}
+    :vertices [[0 1]
+               [-1 1]
+               [0 0]
+               [1 0]]}
    {:type     :L
     :index    5
-    :vertices [[0 -1]
-               [0 0]
+    :vertices [[0 0]
                [0 1]
-               [1 -1]]}
+               [0 2]
+               [1 0]]}
    {:type     :J
     :index    6
     :vertices [[0 0]
@@ -218,6 +218,7 @@
                        (check-for-complete-rows num-cols)
                        spawn-new-piece
                        (assoc-in [:timer :full-down] 0.0)
+                       (assoc-in [:timer :down] 0.0)
                        check-for-game-over)))))
 
 (defn key-down

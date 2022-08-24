@@ -1,13 +1,17 @@
 (ns tetris.render.core
+  (:require
+    [tetris])
   (:import (com.badlogic.gdx.graphics.g2d SpriteBatch BitmapFont TextureRegion GlyphLayout)
-           (com.badlogic.gdx.graphics OrthographicCamera Color)
+           (com.badlogic.gdx.graphics OrthographicCamera Color GL20)
            (com.badlogic.gdx.graphics.glutils ShapeRenderer$ShapeType ShapeRenderer)
            (com.badlogic.gdx.math Vector2)
-           (com.badlogic.gdx.utils Align)))
+           (com.badlogic.gdx.utils Align)
+           (com.badlogic.gdx Gdx)
+           (com.badlogic.gdx.utils.viewport Viewport)))
 
 (def ^:private fps-timer (atom nil))
 (def ^:private fps (atom nil))
-(defn debug-fps [^SpriteBatch sprite-batch
+(defn render-debug-fps [^SpriteBatch sprite-batch
                  ^BitmapFont font
                  ^OrthographicCamera camera
                  delta-time]
@@ -24,7 +28,7 @@
   (.draw font sprite-batch (str "FPS=" @fps) (float 20) (float 20))
   (.end sprite-batch))
 
-(defn score [^SpriteBatch sprite-batch
+(defn render-score [^SpriteBatch sprite-batch
              ^BitmapFont font
              ^OrthographicCamera camera
              {:keys [points level lines-cleared] :as _score}
@@ -87,7 +91,7 @@
   (doseq [[start end] vertex-pairs]
     (.rectLine ^ShapeRenderer shape-renderer (.add (Vector2. x y) start) (.add (Vector2. x y) end) line-thickness)))
 
-(defn grid
+(defn render-grid
   [shape-renderer
    {:keys [line-thickness
            num-rows
@@ -109,7 +113,7 @@
           outline-color))
   (.end shape-renderer))
 
-(defn ghost-piece
+(defn render-ghost-piece
   [shape-renderer
    vertices
    {:keys [color
@@ -128,7 +132,7 @@
                  color))
   (.end shape-renderer))
 
-(defn piece
+(defn render-piece
   ([^SpriteBatch sprite-batch
     ^TextureRegion tile
     rect-size
@@ -140,3 +144,47 @@
             (float (* y rect-size))
             (float rect-size)
             (float rect-size)))))
+
+(defn render [{:keys [delta-time
+                      ^ShapeRenderer shape-renderer
+                      ^SpriteBatch sprite-batch
+                      ^BitmapFont font
+                      ^Viewport view-port
+                      world-width
+                      world-height] :as context}
+              {:keys [background-color
+                      grid
+                      tiles
+                      score] :as state}]
+  (let [^OrthographicCamera camera (.getCamera view-port)
+        {:keys [pieces piece] :as new-state} (tetris/main-loop context state delta-time)]
+    (.glClearColor Gdx/gl
+                   (.r background-color)
+                   (.g background-color)
+                   (.b background-color)
+                   (.a background-color))
+    (.glClear Gdx/gl GL20/GL_COLOR_BUFFER_BIT)
+    (.glEnable Gdx/gl GL20/GL_BLEND)
+    (.glBlendFunc Gdx/gl GL20/GL_SRC_ALPHA GL20/GL_ONE_MINUS_SRC_ALPHA)
+
+    (.setProjectionMatrix shape-renderer (.combined camera))
+    (render-grid shape-renderer grid)
+
+    (when-let [piece (:piece (tetris/move-piece-to-bottom new-state (:num-cols grid)))]
+      (render-ghost-piece shape-renderer
+                   (:vertices (tetris/normalise-vertices piece))
+                   (:ghost-piece state)))
+    (.begin sprite-batch)
+    (doseq [{:keys [index vertices] :as _piece} (conj pieces (tetris/normalise-vertices piece))]
+      (render-piece sprite-batch
+             (nth tiles index)
+             (:rect-size grid)
+             (:x-offset grid)
+             vertices))
+    (.end sprite-batch)
+
+    (render-score sprite-batch font camera score
+           world-width world-height (:rect-size grid))
+
+    (render-debug-fps sprite-batch font camera delta-time)
+    new-state))

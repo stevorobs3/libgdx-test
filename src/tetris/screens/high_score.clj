@@ -1,4 +1,4 @@
-(ns end-game-screen
+(ns tetris.screens.high-score
   (:import (com.badlogic.gdx Screen Gdx InputAdapter Input$Keys)
            (com.badlogic.gdx.graphics GL20 OrthographicCamera Color)
            (com.badlogic.gdx.graphics.g2d BitmapFont SpriteBatch GlyphLayout)

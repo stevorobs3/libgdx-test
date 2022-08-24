@@ -1,9 +1,9 @@
 (ns launcher
   (:require
     [core]
-    [game-screen]
-    [menu-screen]
-    [end-game-screen])
+    [tetris.screens.high-score :as high-score-screen]
+    [tetris.screens.game :as game-screen]
+    [tetris.screens.menu :as menu-screen])
   (:import
     [com.badlogic.gdx.backends.lwjgl LwjglApplication LwjglApplicationConfiguration]
     (com.badlogic.gdx Game))
@@ -19,7 +19,7 @@
   (menu-screen/create context create-game-screen))
 
 (defn create-end-game-screen [context score]
-  (end-game-screen/create context score create-game-screen))
+  (high-score-screen/create context score create-game-screen))
 
 (defn -main []
   (let [game   ^Game (core/create-game create-menu-screen)

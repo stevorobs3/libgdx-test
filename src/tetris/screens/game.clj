@@ -1,58 +1,14 @@
-(ns game-screen
+(ns tetris.screens.game
   (:require
     [tetris.render.core :as render]
+    [tetris.input.core :as input]
     [scoring]
     [tetris])
-  (:import (com.badlogic.gdx Screen Gdx InputAdapter)
-           (com.badlogic.gdx.graphics GL20 OrthographicCamera Color Texture)
-           (com.badlogic.gdx.graphics.g2d BitmapFont SpriteBatch TextureRegion)
+  (:import (com.badlogic.gdx Screen Gdx)
+           (com.badlogic.gdx.graphics Color Texture)
+           (com.badlogic.gdx.graphics.g2d TextureRegion)
            (com.badlogic.gdx.utils.viewport Viewport)
-           (com.badlogic.gdx.graphics.glutils ShapeRenderer)
            (com.badlogic.gdx.math Vector2)))
-
-(defn- render [{:keys [delta-time
-                       ^ShapeRenderer shape-renderer
-                       ^SpriteBatch sprite-batch
-                       ^BitmapFont font
-                       ^Viewport view-port
-                       world-width
-                       world-height] :as context}
-               {:keys [background-color
-                       grid
-                       tiles
-                       score] :as state}]
-  (let [^OrthographicCamera camera (.getCamera view-port)
-        {:keys [pieces piece] :as new-state} (tetris/main-loop context state delta-time)]
-    (.glClearColor Gdx/gl
-                   (.r background-color)
-                   (.g background-color)
-                   (.b background-color)
-                   (.a background-color))
-    (.glClear Gdx/gl GL20/GL_COLOR_BUFFER_BIT)
-    (.glEnable Gdx/gl GL20/GL_BLEND)
-    (.glBlendFunc Gdx/gl GL20/GL_SRC_ALPHA GL20/GL_ONE_MINUS_SRC_ALPHA)
-
-    (.setProjectionMatrix shape-renderer (.combined camera))
-    (render/grid shape-renderer grid)
-
-    (when-let [ghost-piece (:piece (tetris/move-piece-to-bottom new-state (:num-cols grid)))]
-      (render/ghost-piece shape-renderer
-                        (:vertices (tetris/normalise-vertices ghost-piece))
-                        (:ghost-piece state)))
-    (.begin sprite-batch)
-    (doseq [{:keys [index vertices] :as _piece} (conj pieces (tetris/normalise-vertices piece))]
-      (render/piece sprite-batch
-                  (nth tiles index)
-                  (:rect-size grid)
-                  (:x-offset grid)
-                  vertices))
-    (.end sprite-batch)
-
-    (render/score sprite-batch font camera score
-                world-width world-height (:rect-size grid))
-
-    (render/debug-fps sprite-batch font camera delta-time)
-    new-state))
 
 (defn- resize [{:keys [^Viewport view-port] :as _context} state width height]
   (println "resizing" width height)
@@ -110,21 +66,15 @@
                                  :x-offset                x-offset
                                  :grid                    grid
                                  :ghost-piece             ghost-piece
-                                 :score                   scoring/initial-score})]
+                                 :score                   scoring/initial-score})
+        context'          (assoc context :create-end-game-screen create-end-game-screen)]
     (proxy [Screen] []
       (render [delta]
-        (swap! state #(render (assoc context :delta-time delta
-                                             :create-end-game-screen create-end-game-screen) %)))
+        (swap! state #(render/render (assoc context' :delta-time delta) %)))
       (show []
         (println "showing game screen")
         (.setInputProcessor Gdx/input
-                            (proxy [InputAdapter] []
-                              (keyDown [char]
-                                (swap! state (fn [s] (tetris/key-down char context s create-menu-screen)))
-                                true)
-                              (keyUp [char]
-                                (swap! state (fn [s] (tetris/key-up char context s)))
-                                true))))
+                            (input/input-adapter state context create-menu-screen)))
       (hide []
         (println "hiding game screen")
         (.setInputProcessor Gdx/input nil))
@@ -133,5 +83,4 @@
       (pause [])
       (resume [])
       (dispose []
-        (.dispose tile-texture))
-      )))
+        (.dispose tile-texture)))))

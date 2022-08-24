@@ -1,6 +1,6 @@
 (ns game-screen
   (:require
-    [draw]
+    [tetris.render.core :as render]
     [scoring]
     [tetris])
   (:import (com.badlogic.gdx Screen Gdx InputAdapter)
@@ -33,25 +33,25 @@
     (.glBlendFunc Gdx/gl GL20/GL_SRC_ALPHA GL20/GL_ONE_MINUS_SRC_ALPHA)
 
     (.setProjectionMatrix shape-renderer (.combined camera))
-    (draw/grid shape-renderer grid)
+    (render/grid shape-renderer grid)
 
     (when-let [ghost-piece (:piece (tetris/move-piece-to-bottom new-state (:num-cols grid)))]
-      (draw/ghost-piece shape-renderer
+      (render/ghost-piece shape-renderer
                         (:vertices (tetris/normalise-vertices ghost-piece))
                         (:ghost-piece state)))
     (.begin sprite-batch)
     (doseq [{:keys [index vertices] :as _piece} (conj pieces (tetris/normalise-vertices piece))]
-      (draw/piece sprite-batch
+      (render/piece sprite-batch
                   (nth tiles index)
                   (:rect-size grid)
                   (:x-offset grid)
                   vertices))
     (.end sprite-batch)
 
-    (draw/score sprite-batch font camera score
+    (render/score sprite-batch font camera score
                 world-width world-height (:rect-size grid))
 
-    (draw/debug-fps sprite-batch font camera delta-time)
+    (render/debug-fps sprite-batch font camera delta-time)
     new-state))
 
 (defn- resize [{:keys [^Viewport view-port] :as _context} state width height]

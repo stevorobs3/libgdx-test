@@ -1,4 +1,4 @@
-(ns draw
+(ns tetris.render.core
   (:import (com.badlogic.gdx.graphics.g2d SpriteBatch BitmapFont TextureRegion GlyphLayout)
            (com.badlogic.gdx.graphics OrthographicCamera Color)
            (com.badlogic.gdx.graphics.glutils ShapeRenderer$ShapeType ShapeRenderer)

@@ -1,9 +1,7 @@
 (ns tetris
   (:require [clojure.set :as set]
             [medley.core :as medley]
-            [scoring])
-  (:import (com.badlogic.gdx Input$Keys)
-           (com.badlogic.gdx.graphics Color)))
+            [tetris.scoring.core :as scoring]))
 
 (defn rotate-90
   ([verts]
@@ -220,45 +218,6 @@
                        (assoc-in [:timer :full-down] 0.0)
                        (assoc-in [:timer :down] 0.0)
                        check-for-game-over)))))
-
-(defn key-down
-  [key-code
-   {:keys [game] :as context}
-   state
-   create-menu-screen]
-  (if (= (:game-state state) ::playing)
-    (cond
-      (= key-code Input$Keys/ESCAPE) (do (.setScreen game (create-menu-screen context))
-                                         state)
-      (= key-code Input$Keys/LEFT) (-> state
-                                       (piece-movement :left)
-                                       (piece-movement :start-left-auto-move))
-      (= key-code Input$Keys/RIGHT) (-> state
-                                        (piece-movement :right)
-                                        (piece-movement :start-right-auto-move))
-      (= key-code Input$Keys/UP) (piece-movement state :up)
-      (= key-code Input$Keys/DOWN) (-> state
-                                       (piece-movement :down)
-                                       (piece-movement :down-speed-up))
-      (= key-code Input$Keys/SPACE) (piece-movement state :full-down)
-      :else state)
-    state))
-
-(defn key-up
-  [key-code
-   _context
-   {:keys [move-direction] :as state}]
-  (if (= (:game-state state) ::playing)
-    (cond
-      (= key-code Input$Keys/DOWN) (piece-movement state :down-slow-down)
-      (= key-code Input$Keys/LEFT) (if (= move-direction :left)
-                                     (piece-movement state :stop-left-auto-move)
-                                     state)
-      (= key-code Input$Keys/RIGHT) (if (= move-direction :right)
-                                      (piece-movement state :stop-right-auto-move)
-                                      state)
-      :else state)
-    state))
 
 (defn- move-downwards [state move-time timer]
   (let [new-state (piece-movement state :down)]

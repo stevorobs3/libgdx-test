@@ -1,4 +1,4 @@
-(ns scoring)
+(ns tetris.scoring.core)
 
 (defn level->down-move-time [level]
   (float (/ (case level

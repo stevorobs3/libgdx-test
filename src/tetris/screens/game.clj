@@ -2,7 +2,7 @@
   (:require
     [tetris.render.core :as render]
     [tetris.input.core :as input]
-    [scoring]
+    [tetris.scoring.core :as scoring]
     [tetris])
   (:import (com.badlogic.gdx Screen Gdx)
            (com.badlogic.gdx.graphics Color Texture)
@@ -67,10 +67,10 @@
                                  :grid                    grid
                                  :ghost-piece             ghost-piece
                                  :score                   scoring/initial-score})
-        context'          (assoc context :create-end-game-screen create-end-game-screen)]
+        context          (assoc context :create-end-game-screen create-end-game-screen)]
     (proxy [Screen] []
       (render [delta]
-        (swap! state #(render/render (assoc context' :delta-time delta) %)))
+        (swap! state #(render/render (assoc context :delta-time delta) %)))
       (show []
         (println "showing game screen")
         (.setInputProcessor Gdx/input

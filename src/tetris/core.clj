@@ -1,4 +1,4 @@
-(ns tetris
+(ns tetris.core
   (:require [clojure.set :as set]
             [medley.core :as medley]
             [tetris.scoring.core :as scoring]))

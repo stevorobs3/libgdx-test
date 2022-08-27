@@ -2,8 +2,7 @@
   (:require
     [tetris.render.core :as render]
     [tetris.input.core :as input]
-    [tetris.scoring.core :as scoring]
-    [tetris])
+    [tetris.scoring.core :as scoring])
   (:import (com.badlogic.gdx Screen Gdx)
            (com.badlogic.gdx.graphics Color Texture)
            (com.badlogic.gdx.graphics.g2d TextureRegion)

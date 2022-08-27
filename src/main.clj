@@ -1,4 +1,4 @@
-(ns launcher
+(ns main
   (:require
     [core]
     [tetris.screens.high-score :as high-score-screen]
@@ -30,6 +30,6 @@
     (LwjglApplication. game config)))
 
 (comment
-  (do (require '[launcher]
+  (do (require '[main]
                '[core])
-      (launcher/-main)))
+      (main/-main)))

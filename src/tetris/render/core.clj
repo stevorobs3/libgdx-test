@@ -1,6 +1,6 @@
 (ns tetris.render.core
   (:require
-    [tetris])
+    [tetris.core :as tetris])
   (:import (com.badlogic.gdx.graphics.g2d SpriteBatch BitmapFont TextureRegion GlyphLayout)
            (com.badlogic.gdx.graphics OrthographicCamera Color GL20)
            (com.badlogic.gdx.graphics.glutils ShapeRenderer$ShapeType ShapeRenderer)

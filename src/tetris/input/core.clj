@@ -1,5 +1,5 @@
 (ns tetris.input.core
-  (:require [tetris])
+  (:require [tetris.core :as tetris])
   (:import (com.badlogic.gdx InputAdapter Input$Keys)))
 
 (defn key-down
@@ -7,7 +7,7 @@
    {:keys [game] :as context}
    state
    create-menu-screen]
-  (if (= (:game-state state) :tetris/playing)
+  (if (= (:game-state state) ::tetris/playing)
     (cond
       (= key-code Input$Keys/ESCAPE) (do (.setScreen game (create-menu-screen context))
                                          state)
@@ -29,7 +29,7 @@
   [key-code
    _context
    {:keys [move-direction] :as state}]
-  (if (= (:game-state state) :tetris/playing)
+  (if (= (:game-state state) ::tetris/playing)
     (cond
       (= key-code Input$Keys/DOWN) (tetris/piece-movement state :down-slow-down)
       (= key-code Input$Keys/LEFT) (if (= move-direction :left)

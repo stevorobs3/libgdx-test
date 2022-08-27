@@ -1,6 +1,8 @@
 (ns tetris.input.core
-  (:require [tetris.core :as tetris])
-  (:import (com.badlogic.gdx InputAdapter Input$Keys)))
+  (:require
+    [libgdx.input-adapter :as gdx-input]
+    [tetris.core :as tetris])
+  (:import (com.badlogic.gdx Input$Keys)))
 
 (defn key-down
   [key-code
@@ -42,10 +44,8 @@
     state))
 
 (defn input-adapter [state context create-menu-screen]
-  (proxy [InputAdapter] []
-    (keyDown [char]
-      (swap! state (fn [s] (key-down char context s create-menu-screen)))
-      true)
-    (keyUp [char]
-      (swap! state (fn [s] (key-up char context s)))
-      true)))
+  (gdx-input/create
+    {:key-down (fn [key-code]
+                 (swap! state (fn [s] (key-down key-code context s create-menu-screen))))
+     :key-up   (fn [key-code]
+                 (swap! state (fn [s] (key-up key-code context s))))}))

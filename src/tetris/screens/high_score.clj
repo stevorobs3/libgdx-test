@@ -1,6 +1,7 @@
 (ns tetris.screens.high-score
-  (:require [libgdx.screen :as gdx-screen])
-  (:import (com.badlogic.gdx Gdx InputAdapter Input$Keys)
+  (:require [libgdx.screen :as gdx-screen]
+            [libgdx.input-adapter :as gdx-input])
+  (:import (com.badlogic.gdx Gdx Input$Keys)
            (com.badlogic.gdx.graphics GL20 OrthographicCamera Color)
            (com.badlogic.gdx.graphics.g2d BitmapFont SpriteBatch GlyphLayout)
            (com.badlogic.gdx.utils.viewport Viewport)
@@ -42,14 +43,15 @@
   state)
 
 (defn create [context score create-game-screen]
-  (let [state (atom {:score score})]
+  (let [state         (atom {:score score})
+        input-adapter (gdx-input/create
+                        {:key-down (fn [key-code]
+                                     (swap! state #(key-down key-code context % create-game-screen))
+                                     true)})]
     (gdx-screen/create
-      (proxy [InputAdapter] []
-        (keyDown [char]
-          (swap! state (fn [s] (key-down char context s create-game-screen)))
-          true))
+      input-adapter
       {:render  (fn [delta]
                   (swap! state #(render (assoc context :delta-time delta) %)))
        :resize  (fn [width height]
-                  (swap! state (fn [s] (resize context s width height))))
+                  (swap! state #(resize context % width height)))
        :dispose (fn [])})))

@@ -1,5 +1,6 @@
 (ns tetris.screens.menu
-  (:require [libgdx.screen :as gdx-screen])
+  (:require [libgdx.screen :as gdx-screen]
+            [libgdx.input-adapter :as gdx-input])
   (:import (com.badlogic.gdx Gdx InputAdapter Input$Keys)
            (com.badlogic.gdx.graphics GL20 OrthographicCamera Color)
            (com.badlogic.gdx.graphics.g2d BitmapFont SpriteBatch GlyphLayout)
@@ -42,10 +43,10 @@
 (defn create [context create-game-screen]
   (let [state (atom {})]
     (gdx-screen/create
-      (proxy [InputAdapter] []
-        (keyDown [char]
-          (swap! state (fn [s] (key-down char context s create-game-screen)))
-          true))
+      (gdx-input/create
+        {:key-down (fn [key-code]
+                     (swap! state #(key-down key-code context % create-game-screen))
+                     true)})
       {:render  (fn [delta]
                   (swap! state #(render (assoc context :delta-time delta) %)))
        :resize  (fn [width height]

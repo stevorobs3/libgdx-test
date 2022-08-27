@@ -2,9 +2,9 @@
   (:require
     [tetris.render.core :as render]
     [tetris.input.core :as input]
-    [tetris.scoring.core :as scoring])
-  (:import (com.badlogic.gdx Screen Gdx)
-           (com.badlogic.gdx.graphics Color Texture)
+    [tetris.scoring.core :as scoring]
+    [libgdx.screen :as gdx-screen])
+  (:import (com.badlogic.gdx.graphics Color Texture)
            (com.badlogic.gdx.graphics.g2d TextureRegion)
            (com.badlogic.gdx.utils.viewport Viewport)
            (com.badlogic.gdx.math Vector2)))
@@ -66,20 +66,11 @@
                                  :grid                    grid
                                  :ghost-piece             ghost-piece
                                  :score                   scoring/initial-score})
-        context          (assoc context :create-end-game-screen create-end-game-screen)]
-    (proxy [Screen] []
-      (render [delta]
-        (swap! state #(render/render (assoc context :delta-time delta) %)))
-      (show []
-        (println "showing game screen")
-        (.setInputProcessor Gdx/input
-                            (input/input-adapter state context create-menu-screen)))
-      (hide []
-        (println "hiding game screen")
-        (.setInputProcessor Gdx/input nil))
-      (resize [width height]
-        (swap! state (fn [s] (resize context s width height))))
-      (pause [])
-      (resume [])
-      (dispose []
-        (.dispose tile-texture)))))
+        context           (assoc context :create-end-game-screen create-end-game-screen)]
+    (gdx-screen/create
+      (input/input-adapter state context create-menu-screen)
+      {:render  (fn [delta]
+                  (swap! state #(render/render (assoc context :delta-time delta) %)))
+       :resize  (fn [width height]
+                  (swap! state (fn [s] (resize context s width height))))
+       :dispose (fn [] (.dispose tile-texture))})))

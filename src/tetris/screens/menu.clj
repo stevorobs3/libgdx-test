@@ -1,5 +1,6 @@
 (ns tetris.screens.menu
-  (:import (com.badlogic.gdx Screen Gdx InputAdapter Input$Keys)
+  (:require [libgdx.screen :as gdx-screen])
+  (:import (com.badlogic.gdx Gdx InputAdapter Input$Keys)
            (com.badlogic.gdx.graphics GL20 OrthographicCamera Color)
            (com.badlogic.gdx.graphics.g2d BitmapFont SpriteBatch GlyphLayout)
            (com.badlogic.gdx.utils.viewport Viewport)
@@ -40,22 +41,13 @@
 
 (defn create [context create-game-screen]
   (let [state (atom {})]
-    (proxy [Screen] []
-      (render [delta]
-        (swap! state #(render (assoc context :delta-time delta) %)))
-      (show []
-        (println "showing menu screen")
-        (.setInputProcessor Gdx/input
-                            (proxy [InputAdapter] []
-                              (keyDown [char]
-                                (swap! state (fn [s] (key-down char context s create-game-screen)))
-                                true))))
-      (hide []
-        (println "hiding menu screen")
-        (.setInputProcessor Gdx/input nil))
-      (resize [width height]
-        (swap! state (fn [s] (resize context s width height))))
-      (pause [])
-      (resume [])
-      (dispose [])
-      )))
+    (gdx-screen/create
+      (proxy [InputAdapter] []
+        (keyDown [char]
+          (swap! state (fn [s] (key-down char context s create-game-screen)))
+          true))
+      {:render  (fn [delta]
+                  (swap! state #(render (assoc context :delta-time delta) %)))
+       :resize  (fn [width height]
+                  (swap! state (fn [s] (resize context s width height))))
+       :dispose (fn [])})))

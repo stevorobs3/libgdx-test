@@ -3,7 +3,8 @@
     [core]
     [tetris.screens.high-score :as high-score-screen]
     [tetris.screens.game :as game-screen]
-    [tetris.screens.menu :as menu-screen])
+    [tetris.screens.menu :as menu-screen]
+    [libgdx.game :as gdx-game])
   (:import
     [com.badlogic.gdx.backends.lwjgl LwjglApplication LwjglApplicationConfiguration]
     (com.badlogic.gdx Game))
@@ -22,7 +23,7 @@
   (high-score-screen/create context score create-game-screen))
 
 (defn -main []
-  (let [game   ^Game (core/create-game create-menu-screen)
+  (let [game   ^Game (gdx-game/create create-menu-screen 800 800)
         config (LwjglApplicationConfiguration.)]
     (set! (.title config) "test")
     (set! (.width config) 1024)

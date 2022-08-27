@@ -1,17 +1,15 @@
-(ns core
-  (:import
-    [com.badlogic.gdx Game Gdx]
-    (com.badlogic.gdx.graphics.g2d BitmapFont SpriteBatch)
-    (com.badlogic.gdx.graphics OrthographicCamera)
-    (com.badlogic.gdx.graphics.glutils ShapeRenderer)
-    (com.badlogic.gdx.utils.viewport FitViewport)))
+(ns libgdx.game
+  (:import (com.badlogic.gdx Game Gdx)
+           (com.badlogic.gdx.graphics.glutils ShapeRenderer)
+           (com.badlogic.gdx.graphics.g2d SpriteBatch BitmapFont)
+           (com.badlogic.gdx.graphics OrthographicCamera)
+           (com.badlogic.gdx.utils.viewport FitViewport)))
 
-(defn create-game [create-initial-screen-fn]
+
+(defn create [create-initial-screen-fn world-width world-height]
   (let [[font sprite-batch shape-renderer
          :as disposables] (repeatedly 3 (fn [] (atom nil)))
-        view-port    (atom nil)
-        world-width  800
-        world-height 800]
+        view-port    (atom nil)]
     (proxy [Game] []
       (create []
         (.setScreen this (create-initial-screen-fn
@@ -36,5 +34,4 @@
         (println "disposing" (count disposables) "things")
         (doseq [d disposables]
           (println "disposing " (type @d))
-          (.dispose @d))
-        ))))
+          (.dispose @d))))))

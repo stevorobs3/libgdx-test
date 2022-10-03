@@ -1,1 +1,1 @@
-clj -M -m launcher
+clj -M -m main

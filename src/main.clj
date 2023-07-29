@@ -25,7 +25,7 @@
 (defn -main []
   (let [game   ^Game (gdx-game/create create-menu-screen 800 800)
         config (LwjglApplicationConfiguration.)]
-    (set! (.title config) "test")
+    (set! (.title config) "Tetris")
     (set! (.width config) 1024)
     (set! (.height config) 768)
     (LwjglApplication. game config)))

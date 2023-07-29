@@ -70,6 +70,11 @@
       first
       (assoc :position piece-spawn-point)))
 
+(defn choose-next-piece [{:keys [next-piece piece-spawn-point] :as state}]
+  (-> state
+      (assoc :piece (or next-piece (random-piece piece-spawn-point)))
+      (assoc :next-piece (random-piece piece-spawn-point))))
+
 (def all-pieces
   (->> (zipmap [0 2 3 6 8 10 12] pieces)
        (map (fn [[index piece]]
@@ -150,10 +155,10 @@
           collided? (-> (assoc :pieces (conj pieces (normalise-vertices piece)))
                         (dissoc :collided? :piece))))
 
-(defn spawn-new-piece [{:keys [complete-rows piece-spawn-point piece] :as state}]
+(defn spawn-new-piece [{:keys [complete-rows piece] :as state}]
   (cond-> state
           (and (nil? piece)
-               (empty? complete-rows)) (assoc :piece (random-piece piece-spawn-point))))
+               (empty? complete-rows)) choose-next-piece))
 
 (defn check-for-game-over
   [{:keys [pieces grid] :as state}]
@@ -252,7 +257,7 @@
             sideways-move-time-exceeded? (move-sideways move-time new-timer move-direction)
             full-down-time-exceeded? (medley/dissoc-in [:timer :full-down]))))
 
-(defn do-clearing-state [{:keys [complete-rows pieces piece-spawn-point] :as state}]
+(defn do-clearing-state [{:keys [complete-rows pieces] :as state}]
   (let [row-complete?    (set complete-rows)
         ;;todo: do this in a nice animated way!
         new-pieces       (->> pieces
@@ -263,16 +268,14 @@
                                                                       (let [num-rows-to-drop (count (filter (fn [r] (> y r)) complete-rows))]
                                                                         [x (- y num-rows-to-drop)])))))))
                               (filter #(seq (:vertices %))))
-        piece            (random-piece piece-spawn-point)
         update-move-time (fn [{{:keys [level]} :score
                                :as             new-state}]
                            (when (not= (get-in state [:score :level]) level)
                              (println "changing  move time" level (scoring/level->down-move-time level)))
                            (assoc-in new-state [:move-time :down] (scoring/level->down-move-time level)))]
-
     (-> state
+        choose-next-piece
         (assoc :pieces new-pieces
-               :piece piece
                :game-state ::playing)
         (dissoc :complete-rows)
         (update :score scoring/clear-lines (count complete-rows))

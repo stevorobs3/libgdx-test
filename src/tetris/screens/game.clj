@@ -51,21 +51,22 @@
                            :rect-size         rect-size
                            :x-offset          x-offset
                            :cell-vertex-pairs cell-vertex-pairs}
-        state             (atom {:background-color        (.cpy Color/GRAY)
+        state             (atom {:background-color           (.cpy Color/GRAY)
                                  ;todo: move times need to be made simpler
-                                 :move-time               {:down      (scoring/level->down-move-time 0)
-                                                           :sideways  1
-                                                           ;todo: this isn't a move-time, this should be done async instead, possibly just using futures...
-                                                           :full-down 0.2}
-                                 :fast-move-time          0.05
-                                 :sideways-fast-move-time 0.2
-                                 :piece-line-thickness    2
-                                 :piece-spawn-point       piece-spawn-point
-                                 :tiles                   tiles
-                                 :x-offset                x-offset
-                                 :grid                    grid
-                                 :ghost-piece             ghost-piece
-                                 :score                   scoring/initial-score})
+                                 :move-time                  {:down      (scoring/level->down-move-time 0)
+                                                              :sideways  1
+                                                              ;todo: this isn't a move-time, this should be done async instead, possibly just using futures...
+                                                              :full-down 0.2}
+                                 :fast-move-time             0.05
+                                 :sideways-fast-move-time    0.2
+                                 :piece-line-thickness       2
+                                 :piece-spawn-point          piece-spawn-point
+                                 :next-piece-render-location [12 13] ; where to render the next piece
+                                 :tiles                      tiles
+                                 :x-offset                   x-offset
+                                 :grid                       grid
+                                 :ghost-piece                ghost-piece
+                                 :score                      scoring/initial-score})
         context           (assoc context :create-end-game-screen create-end-game-screen)]
     (gdx-screen/create
       (input/input-adapter state context create-menu-screen)

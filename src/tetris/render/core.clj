@@ -189,10 +189,10 @@
 
     (when-let [{:keys [piece]} (tetris/move-piece-to-bottom state (:num-cols grid))]
       (render-ghost-piece shape-renderer
-                          (:vertices (tetris/reset-position piece))
+                          (:vertices (tetris/normalise-position piece))
                           ghost-piece))
     (.begin sprite-batch)
-    (doseq [{:keys [index vertices] :as _piece} (conj pieces (tetris/reset-position piece))]
+    (doseq [{:keys [index vertices] :as _piece} (conj pieces (tetris/normalise-position piece))]
       (render-piece sprite-batch
                     (nth tiles index)
                     grid
@@ -200,16 +200,16 @@
     (when next-pieces
       (doseq [[index next-piece] (zipmap (range 2 -1 -1)
                                          next-pieces)]
-        (let [{:keys [index vertices]} (tetris/reset-position
-                                         next-piece
-                                         [2 (inc (* index 3))])]
+        (let [{:keys [index vertices]} (tetris/normalise-position
+                                         (assoc next-piece :position
+                                                           [2 (inc (* index 3))]))]
           (render-piece sprite-batch
                         (nth tiles index)
                         next-piece-grid
                         vertices))))
 
     (when hold-piece
-      (let [{:keys [index vertices]} (tetris/reset-position hold-piece [2 1])]
+      (let [{:keys [index vertices]} (tetris/normalise-position (assoc hold-piece :position [2 1]))]
         (render-piece sprite-batch
                       (nth tiles index)
                       hold-piece-grid

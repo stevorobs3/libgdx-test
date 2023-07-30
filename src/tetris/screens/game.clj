@@ -22,8 +22,9 @@
   (let [piece-spawn-point [5 20]
         num-rows          20
         num-cols          10
-        rect-size         (/ world-height num-rows)
+        rect-size         (/ world-width (+ num-cols 14))
         x-offset          (- (/ world-width 2) (/ (* num-cols rect-size) 2))
+        y-offset          rect-size
         tile-texture      (Texture. "tetris-tiles.png")
         tiles             (map (fn [number]
                                  (TextureRegion. tile-texture (int (+ (* 13 20) 8)) (int (+ (* number 20) 8)) (int 16) (int 16)))
@@ -41,6 +42,7 @@
                            :rect-size         rect-size
                            ;todo: better name for this too!
                            :x-offset          x-offset
+                           :y-offset          y-offset
                            :fill-color        (.cpy Color/BLACK)
                            :outline-color     (let [color (.cpy Color/DARK_GRAY)]
                                                 (set! (.a color) 0.7)
@@ -51,6 +53,7 @@
                            :line-thickness    2
                            :rect-size         rect-size
                            :x-offset          x-offset
+                           :y-offset          y-offset
                            :cell-vertex-pairs cell-vertex-pairs}
         state             (atom {:background-color           (.cpy Color/GRAY)
                                  ;todo: move times need to be made simpler
@@ -63,9 +66,15 @@
                                  :piece-line-thickness       2
                                  :piece-spawn-point          piece-spawn-point
                                  :next-piece-render-location [12 13] ; where to render the next piece
+                                 :next-piece-grid            {:num-rows  4
+                                                              :num-cols  4
+                                                              :rect-size rect-size
+                                                              :x-offset  (* rect-size (inc num-cols))
+                                                              :y-offset  (* rect-size (int (/ num-rows 2)))}
                                  :tiles                      tiles
                                  :x-offset                   x-offset
                                  :grid                       grid
+
                                  :ghost-piece                ghost-piece
                                  :score                      scoring/initial-score})
         context           (assoc context :create-end-game-screen create-end-game-screen)]

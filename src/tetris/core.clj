@@ -15,14 +15,14 @@
     :index    0
     :vertices [[0 0]
                [0 1]
-               [-1 0]
-               [-1 1]]}
+               [1 0]
+               [1 1]]}
    {:type     :I
     :index    1
-    :vertices [[-2 0]
-               [-1 0]
+    :vertices [[2 0]
+               [1 0]
                [0 0]
-               [1 0]]}
+               [-1 0]]}
    {:type     :T
     :index    2
     :vertices [[0 1]
@@ -43,15 +43,15 @@
                [1 0]]}
    {:type     :L
     :index    5
-    :vertices [[0 0]
-               [0 1]
-               [0 2]
-               [1 0]]}
+    :vertices [[-1 0]
+               [0 0]
+               [1 0]
+               [1 1]]}
    {:type     :J
     :index    6
-    :vertices [[0 0]
+    :vertices [[-1 0]
+               [0 0]
                [1 0]
-               [-1 0]
                [-1 1]]}])
 
 (defn normalise-vertices

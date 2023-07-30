@@ -89,7 +89,10 @@
    ^Color outline-color]
   (.setColor shape-renderer outline-color)
   (doseq [[start end] vertex-pairs]
-    (.rectLine ^ShapeRenderer shape-renderer (.add (Vector2. x y) start) (.add (Vector2. x y) end) line-thickness)))
+    (.rectLine ^ShapeRenderer shape-renderer
+               (.add (Vector2. x y) start)
+               (.add (Vector2. x y) end)
+               line-thickness)))
 
 (defn render-grid
   [shape-renderer
@@ -99,13 +102,17 @@
            rect-size
            cell-vertex-pairs
            x-offset
+           y-offset
            fill-color
-           outline-color] :as _config}]
+           outline-color]
+    :as   _config
+    :or   {y-offset 0}}]
   (.begin shape-renderer ShapeRenderer$ShapeType/Filled)
   (doseq [i (range num-cols)
           j (range num-rows)]
     (cell shape-renderer
-          (+ (* rect-size i) x-offset) (* rect-size j)
+          (+ (* rect-size i) x-offset)
+          (+ (* rect-size j) y-offset)
           rect-size rect-size
           line-thickness
           cell-vertex-pairs
@@ -120,13 +127,14 @@
            line-thickness
            rect-size
            x-offset
-           cell-vertex-pairs]}]
+           y-offset
+           cell-vertex-pairs]
+    :or   {y-offset 40}}]
   (.begin shape-renderer ShapeRenderer$ShapeType/Filled)
   (doseq [[x y] vertices]
-
     (hollow-cell shape-renderer
                  (+ x-offset (* x rect-size))
-                 (* y rect-size)
+                 (+ y-offset (* y rect-size))
                  cell-vertex-pairs
                  line-thickness
                  color))
@@ -135,13 +143,13 @@
 (defn render-piece
   ([^SpriteBatch sprite-batch
     ^TextureRegion tile
-    rect-size
-    x-offset
+    {:keys [rect-size x-offset y-offset] :as _grid
+     :or   {y-offset 0}}
     vertices]
    (doseq [[x y] vertices]
      (.draw sprite-batch tile
             (float (+ x-offset (* x rect-size)))
-            (float (* y rect-size))
+            (float (+ y-offset (* y rect-size)))
             (float rect-size)
             (float rect-size)))))
 
@@ -156,13 +164,33 @@
    {:keys [background-color
            ghost-piece
            grid
+           next-piece-grid
            next-piece
-           next-piece-render-location
            piece
            pieces
            score
            tiles] :as state}]
-  (let [^OrthographicCamera camera (.getCamera view-port)]
+  (let [^OrthographicCamera camera (.getCamera view-port)
+        rect-size                  (:rect-size grid)
+        cell-vertices              [(Vector2. 0 0)
+                                    (Vector2. 0 rect-size)
+                                    (Vector2. rect-size rect-size)
+                                    (Vector2. rect-size 0)]
+        cell-vertex-pairs          (conj (partition 2 1 cell-vertices)
+                                         ((juxt last first) cell-vertices))
+        next-piece-grid            {:num-rows          12
+                                    :num-cols          6
+                                    :rect-size         (:rect-size grid)
+                                    :x-offset          (+ (:x-offset grid)
+                                                          (+ (int (/ (:rect-size grid) 2)))
+                                                          (* (:rect-size grid) 10))
+                                    :y-offset          (* (:rect-size grid) 3)
+                                    :line-thickness    4
+                                    :cell-vertex-pairs cell-vertex-pairs
+                                    :fill-color        (.cpy Color/BLACK)
+                                    :outline-color     (let [color (.cpy Color/DARK_GRAY)]
+                                                         (set! (.a color) 0.7)
+                                                         color)}]
     (.glClearColor Gdx/gl
                    (.r background-color)
                    (.g background-color)
@@ -174,6 +202,8 @@
 
     (.setProjectionMatrix shape-renderer (.combined camera))
     (render-grid shape-renderer grid)
+    (render-grid shape-renderer next-piece-grid)
+
 
     (when-let [{:keys [piece]} (tetris/move-piece-to-bottom state (:num-cols grid))]
       (render-ghost-piece shape-renderer
@@ -183,18 +213,16 @@
     (doseq [{:keys [index vertices] :as _piece} (conj pieces (tetris/normalise-vertices piece))]
       (render-piece sprite-batch
                     (nth tiles index)
-                    (:rect-size grid)
-                    (:x-offset grid)
+                    grid
                     vertices))
     (when (:next-piece state)
       (let [{:keys [index vertices]} (tetris/normalise-vertices
                                        (assoc next-piece
-                                         :position next-piece-render-location))]
+                                         :position [2 1]))]
         ;todo: render in a different grid
         (render-piece sprite-batch
                       (nth tiles index)
-                      (:rect-size grid)
-                      (:x-offset grid)
+                      next-piece-grid
                       vertices)))
     (.end sprite-batch)
 

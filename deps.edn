@@ -13,6 +13,9 @@
   org.clojure/clojure                                       {:mvn/version "1.11.1"}
   ;; medley
   medley/medley                                             {:mvn/version "1.4.0"}
+  ;; schema validation
+  prismatic/schema                                          {:mvn/version "1.4.1"}
+
   }
  :aliases
  {:test {:extra-paths ["test"]}}}

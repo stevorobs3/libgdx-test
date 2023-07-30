@@ -165,7 +165,7 @@
            ghost-piece
            grid
            next-piece-grid
-           next-piece
+           next-pieces
            piece
            pieces
            score
@@ -178,13 +178,13 @@
                                     (Vector2. rect-size 0)]
         cell-vertex-pairs          (conj (partition 2 1 cell-vertices)
                                          ((juxt last first) cell-vertices))
-        next-piece-grid            {:num-rows          12
+        next-piece-grid            {:num-rows          10
                                     :num-cols          6
                                     :rect-size         (:rect-size grid)
                                     :x-offset          (+ (:x-offset grid)
                                                           (+ (int (/ (:rect-size grid) 2)))
                                                           (* (:rect-size grid) 10))
-                                    :y-offset          (* (:rect-size grid) 3)
+                                    :y-offset          (* (:rect-size grid) 9)
                                     :line-thickness    4
                                     :cell-vertex-pairs cell-vertex-pairs
                                     :fill-color        (.cpy Color/BLACK)
@@ -215,10 +215,27 @@
                     (nth tiles index)
                     grid
                     vertices))
-    (when (:next-piece state)
+    (when (:next-pieces state)
       (let [{:keys [index vertices]} (tetris/normalise-vertices
-                                       (assoc next-piece
+                                       (assoc (nth next-pieces 2)
                                          :position [2 1]))]
+        ;todo: render in a different grid
+        (render-piece sprite-batch
+                      (nth tiles index)
+                      next-piece-grid
+                      vertices))
+      (let [{:keys [index vertices]} (tetris/normalise-vertices
+                                       (assoc (nth next-pieces 1)
+                                         :position [2 4]))]
+        ;todo: render in a different grid
+        (render-piece sprite-batch
+                      (nth tiles index)
+                      next-piece-grid
+                      vertices))
+
+      (let [{:keys [index vertices]} (tetris/normalise-vertices
+                                       (assoc (nth next-pieces 0)
+                                         :position [2 7]))]
         ;todo: render in a different grid
         (render-piece sprite-batch
                       (nth tiles index)

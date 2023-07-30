@@ -70,10 +70,13 @@
       first
       (assoc :position piece-spawn-point)))
 
-(defn choose-next-piece [{:keys [next-piece piece-spawn-point] :as state}]
-  (-> state
-      (assoc :piece (or next-piece (random-piece piece-spawn-point)))
-      (assoc :next-piece (random-piece piece-spawn-point))))
+(defn choose-next-piece [{:keys [next-pieces piece-spawn-point] :as state}]
+  (let [next-pieces (or next-pieces
+                        (repeatedly 3 #(random-piece piece-spawn-point)))
+        [next-piece & rest] next-pieces]
+    (-> state
+        (assoc :piece next-piece)
+        (assoc :next-pieces (concat rest [(random-piece piece-spawn-point)])))))
 
 (def all-pieces
   (->> (zipmap [0 2 3 6 8 10 12] pieces)

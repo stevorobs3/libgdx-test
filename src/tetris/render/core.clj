@@ -216,31 +216,15 @@
                     grid
                     vertices))
     (when (:next-pieces state)
-      (let [{:keys [index vertices]} (tetris/normalise-vertices
-                                       (assoc (nth next-pieces 2)
-                                         :position [2 1]))]
-        ;todo: render in a different grid
-        (render-piece sprite-batch
-                      (nth tiles index)
-                      next-piece-grid
-                      vertices))
-      (let [{:keys [index vertices]} (tetris/normalise-vertices
-                                       (assoc (nth next-pieces 1)
-                                         :position [2 4]))]
-        ;todo: render in a different grid
-        (render-piece sprite-batch
-                      (nth tiles index)
-                      next-piece-grid
-                      vertices))
-
-      (let [{:keys [index vertices]} (tetris/normalise-vertices
-                                       (assoc (nth next-pieces 0)
-                                         :position [2 7]))]
-        ;todo: render in a different grid
-        (render-piece sprite-batch
-                      (nth tiles index)
-                      next-piece-grid
-                      vertices)))
+      (doseq [[index next-piece] (zipmap (range 2 -1 -1)
+                                         next-pieces)]
+        (let [{:keys [index vertices]} (tetris/normalise-vertices
+                                         (assoc next-piece
+                                           :position [2 (inc (* index 3))]))]
+          (render-piece sprite-batch
+                        (nth tiles index)
+                        next-piece-grid
+                        vertices))))
     (.end sprite-batch)
 
     (render-score sprite-batch font camera score

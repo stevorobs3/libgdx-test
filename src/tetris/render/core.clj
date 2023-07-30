@@ -145,19 +145,24 @@
             (float rect-size)
             (float rect-size)))))
 
-(defn render [{:keys [delta-time
-                      ^ShapeRenderer shape-renderer
-                      ^SpriteBatch sprite-batch
-                      ^BitmapFont font
-                      ^Viewport view-port
-                      world-width
-                      world-height] :as context}
-              {:keys [background-color
-                      grid
-                      tiles
-                      score] :as state}]
-  (let [^OrthographicCamera camera (.getCamera view-port)
-        {:keys [pieces piece] :as new-state} (tetris/main-loop context state delta-time)]
+(defn render
+  [{:keys [delta-time
+           ^ShapeRenderer shape-renderer
+           ^SpriteBatch sprite-batch
+           ^BitmapFont font
+           ^Viewport view-port
+           world-width
+           world-height]}
+   {:keys [background-color
+           ghost-piece
+           grid
+           next-piece
+           next-piece-render-location
+           piece
+           pieces
+           score
+           tiles] :as state}]
+  (let [^OrthographicCamera camera (.getCamera view-port)]
     (.glClearColor Gdx/gl
                    (.r background-color)
                    (.g background-color)
@@ -170,10 +175,10 @@
     (.setProjectionMatrix shape-renderer (.combined camera))
     (render-grid shape-renderer grid)
 
-    (when-let [piece (:piece (tetris/move-piece-to-bottom new-state (:num-cols grid)))]
+    (when-let [{:keys [piece]} (tetris/move-piece-to-bottom state (:num-cols grid))]
       (render-ghost-piece shape-renderer
                           (:vertices (tetris/normalise-vertices piece))
-                          (:ghost-piece state)))
+                          ghost-piece))
     (.begin sprite-batch)
     (doseq [{:keys [index vertices] :as _piece} (conj pieces (tetris/normalise-vertices piece))]
       (render-piece sprite-batch
@@ -182,20 +187,17 @@
                     (:x-offset grid)
                     vertices))
     (when (:next-piece state)
-      (let [{:keys [index vertices]} (tetris/normalise-vertices (-> (:next-piece state)
-                                                                    (assoc :position (:next-piece-render-location state))))]
+      (let [{:keys [index vertices]} (tetris/normalise-vertices
+                                       (assoc next-piece
+                                         :position next-piece-render-location))]
+        ;todo: render in a different grid
         (render-piece sprite-batch
                       (nth tiles index)
                       (:rect-size grid)
-                      (+ 10 (:x-offset grid))
+                      (:x-offset grid)
                       vertices)))
     (.end sprite-batch)
 
     (render-score sprite-batch font camera score
                   world-width world-height (:rect-size grid))
-
-
-
-
-    (render-debug-fps sprite-batch font camera delta-time)
-    new-state))
+    (render-debug-fps sprite-batch font camera delta-time)))

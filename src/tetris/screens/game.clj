@@ -3,7 +3,8 @@
     [tetris.render.core :as render]
     [tetris.input.core :as input]
     [tetris.scoring.core :as scoring]
-    [libgdx.screen :as gdx-screen])
+    [libgdx.screen :as gdx-screen]
+    [tetris.core :as tetris])
   (:import (com.badlogic.gdx.graphics Color Texture)
            (com.badlogic.gdx.graphics.g2d TextureRegion)
            (com.badlogic.gdx.utils.viewport Viewport)
@@ -71,7 +72,9 @@
     (gdx-screen/create
       (input/input-adapter state context create-menu-screen)
       {:render  (fn [delta]
-                  (swap! state #(render/render (assoc context :delta-time delta) %)))
+                  (swap! state #(tetris/main-loop context % delta))
+                  (render/render (assoc context :delta-time delta)
+                                 @state))
        :resize  (fn [width height]
                   (swap! state (fn [s] (resize context s width height))))
        :dispose (fn [] (.dispose tile-texture))})))

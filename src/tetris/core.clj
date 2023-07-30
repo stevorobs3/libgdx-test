@@ -54,15 +54,24 @@
                [1 0]
                [-1 1]]}])
 
-(defn normalise-vertices
-  "return a piece with position = 0,0 and vertices offset from there"
-  [{:keys [position] :as piece}]
-  (-> piece
-      (update :vertices (fn [vertices]
-                          (map #(vector (+ (first %) (first position))
-                                        (+ (second %) (second position)))
-                               vertices)))
-      (assoc :position [0 0])))
+(def piece-type->original-vertices
+  (->> pieces
+       (map #(vector (:type %) (:vertices %)))
+       (into {})))
+
+(defn reset-rotation [piece]
+  (assoc piece :vertices ((:type piece) piece-type->original-vertices)))
+
+(defn reset-position
+  "Reset piece to a new position, with vertices offset from there"
+  ([piece] (reset-position piece [0 0]))
+  ([{:keys [position] :as piece} new-position]
+   (-> piece
+       (update :vertices (fn [vertices]
+                           (map #(vector (+ (first %) (first position))
+                                         (+ (second %) (second position)))
+                                vertices)))
+       (assoc :position new-position))))
 
 (defn random-piece [piece-spawn-point]
   (-> pieces
@@ -82,13 +91,13 @@
   (->> (zipmap [0 2 3 6 8 10 12] pieces)
        (map (fn [[index piece]]
               (assoc piece :position [2 index])))
-       (map normalise-vertices)))
+       (map reset-position)))
 
 (defn collision?
   "returns true if the piece shares a vertex with any of the pieces or
    any of the left, bottom or right walls"
   [pieces piece num-cols]
-  (let [piece-vertices   (-> piece normalise-vertices :vertices set)
+  (let [piece-vertices   (-> piece reset-position :vertices set)
         all-vertices     (->> pieces
                               (mapcat :vertices)
                               (into #{}))
@@ -155,7 +164,7 @@
 
 (defn normalise-collided-piece [{:keys [pieces piece collided?] :as state}]
   (cond-> state
-          collided? (-> (assoc :pieces (conj pieces (normalise-vertices piece)))
+          collided? (-> (assoc :pieces (conj pieces (reset-position piece)))
                         (dissoc :collided? :piece))))
 
 (defn spawn-new-piece [{:keys [complete-rows piece] :as state}]
@@ -226,6 +235,19 @@
                        (assoc-in [:timer :full-down] 0.0)
                        (assoc-in [:timer :down] 0.0)
                        check-for-game-over)))))
+
+(defn hold-piece [{:keys [piece
+                          piece-spawn-point
+                          hold-piece] :as state}]
+  (println "piece" piece)
+  (println "hold piece" piece)
+  ;todo: reset hold-piece and piece to piece-spawn-point
+  (cond-> state
+          (not= hold-piece piece) (assoc :hold-piece (-> piece
+                                                         (reset-position piece-spawn-point)
+                                                         reset-rotation))
+          (nil? hold-piece) choose-next-piece
+          (some? hold-piece) (assoc :piece hold-piece)))
 
 (defn- move-downwards [state move-time timer]
   (let [new-state (piece-movement state :down)]

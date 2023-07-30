@@ -24,6 +24,7 @@
                                        (tetris/piece-movement :down)
                                        (tetris/piece-movement :down-speed-up))
       (= key-code Input$Keys/SPACE) (tetris/piece-movement state :full-down)
+      (= key-code Input$Keys/C) (tetris/hold-piece state)
       :else state)
     state))
 

@@ -163,8 +163,10 @@
    {:keys [background-color
            ghost-piece
            grid
+           hold-piece-grid
            next-piece-grid
            next-pieces
+           hold-piece
            piece
            pieces
            score
@@ -182,6 +184,7 @@
     (.setProjectionMatrix shape-renderer (.combined camera))
     (render-grid shape-renderer grid)
     (render-grid shape-renderer next-piece-grid)
+    (render-grid shape-renderer hold-piece-grid)
 
 
     (when-let [{:keys [piece]} (tetris/move-piece-to-bottom state (:num-cols grid))]
@@ -194,7 +197,7 @@
                     (nth tiles index)
                     grid
                     vertices))
-    (when (:next-pieces state)
+    (when next-pieces
       (doseq [[index next-piece] (zipmap (range 2 -1 -1)
                                          next-pieces)]
         (let [{:keys [index vertices]} (tetris/normalise-vertices
@@ -204,6 +207,16 @@
                         (nth tiles index)
                         next-piece-grid
                         vertices))))
+
+    (when hold-piece
+      (let [{:keys [index vertices]} (tetris/normalise-vertices
+                                       (assoc hold-piece
+                                         :position [2 1]))]
+        (render-piece sprite-batch
+                      (nth tiles index)
+                      hold-piece-grid
+                      vertices)))
+
     (.end sprite-batch)
 
     (render-score sprite-batch font camera score

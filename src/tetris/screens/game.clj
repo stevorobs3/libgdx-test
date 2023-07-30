@@ -47,6 +47,18 @@
                            :outline-color     (let [color (.cpy Color/DARK_GRAY)]
                                                 (set! (.a color) 0.7)
                                                 color)}
+        hold-piece-grid   {:num-rows          5
+                           :num-cols          6
+                           :rect-size         (:rect-size grid)
+                           :x-offset          (+ (:x-offset grid)
+                                                 (- (* 6.5 (:rect-size grid))))
+                           :y-offset          (* (:rect-size grid) 15)
+                           :line-thickness    4
+                           :cell-vertex-pairs cell-vertex-pairs
+                           :fill-color        (.cpy Color/BLACK)
+                           :outline-color     (let [color (.cpy Color/DARK_GRAY)]
+                                                (set! (.a color) 0.7)
+                                                color)}
         next-piece-grid   {:num-rows          10
                            :num-cols          6
                            :rect-size         (:rect-size grid)
@@ -79,6 +91,7 @@
                                  :piece-line-thickness    2
                                  :piece-spawn-point       piece-spawn-point
                                  :next-piece-grid         next-piece-grid
+                                 :hold-piece-grid         hold-piece-grid
                                  :tiles                   tiles
                                  :x-offset                x-offset
                                  :grid                    grid

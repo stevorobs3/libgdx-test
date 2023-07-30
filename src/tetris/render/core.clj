@@ -25,7 +25,7 @@
                      ))
   (.begin sprite-batch)
   (.setColor font Color/RED)
-  (.draw font sprite-batch (str "FPS=" @fps) (float 20) (float 20))
+  (.draw font sprite-batch (str "FPS=" @fps) (float 20) (float 40))
   (.end sprite-batch))
 
 (defn render-score [^SpriteBatch sprite-batch
@@ -33,13 +33,13 @@
                     ^OrthographicCamera camera
                     {:keys [points level lines-cleared] :as _score}
                     world-width
-                    world-height
-                    rect-size]
+                    {:keys [num-rows rect-size y-offset]}]
   ;todo: use scene 2d ui? + make it pretty.
   (let [points-text                       (str " Score: " points)
         level-text                        (str " Level: " level)
         lines-cleared-text                (str " Lines: " lines-cleared)
         grid-x                            (float (+ (* rect-size 5) (/ world-width 2)))
+        grid-height                       (+ (* num-rows rect-size) y-offset)
         text-width                        (float (- world-width (* 10 rect-size)))
         ^GlyphLayout points-layout        (GlyphLayout. font points-text Color/BLUE text-width Align/left true)
         ^GlyphLayout level-layout         (GlyphLayout. font level-text Color/BLUE text-width Align/left true)
@@ -48,14 +48,14 @@
     (.begin sprite-batch)
     (.setScale (.getData font) 2)
     (.draw font sprite-batch points-layout grid-x
-           (float (- world-height
-                     (.height points-layout))))
+           (float (- grid-height
+                     (/ (.height points-layout) 2))))
     (.draw font sprite-batch level-layout grid-x
-           (float (- world-height
-                     (* 3 (.height points-layout)))))
+           (float (- grid-height
+                     (* 2 (.height points-layout)))))
     (.draw font sprite-batch lines-cleared-layout grid-x
-           (float (- world-height
-                     (* 5 (.height points-layout)))))
+           (float (- grid-height
+                     (* 3.5 (.height points-layout)))))
 
     (.end sprite-batch)))
 
@@ -159,8 +159,7 @@
            ^SpriteBatch sprite-batch
            ^BitmapFont font
            ^Viewport view-port
-           world-width
-           world-height]}
+           world-width]}
    {:keys [background-color
            ghost-piece
            grid
@@ -170,27 +169,7 @@
            pieces
            score
            tiles] :as state}]
-  (let [^OrthographicCamera camera (.getCamera view-port)
-        rect-size                  (:rect-size grid)
-        cell-vertices              [(Vector2. 0 0)
-                                    (Vector2. 0 rect-size)
-                                    (Vector2. rect-size rect-size)
-                                    (Vector2. rect-size 0)]
-        cell-vertex-pairs          (conj (partition 2 1 cell-vertices)
-                                         ((juxt last first) cell-vertices))
-        next-piece-grid            {:num-rows          10
-                                    :num-cols          6
-                                    :rect-size         (:rect-size grid)
-                                    :x-offset          (+ (:x-offset grid)
-                                                          (+ (int (/ (:rect-size grid) 2)))
-                                                          (* (:rect-size grid) 10))
-                                    :y-offset          (* (:rect-size grid) 9)
-                                    :line-thickness    4
-                                    :cell-vertex-pairs cell-vertex-pairs
-                                    :fill-color        (.cpy Color/BLACK)
-                                    :outline-color     (let [color (.cpy Color/DARK_GRAY)]
-                                                         (set! (.a color) 0.7)
-                                                         color)}]
+  (let [^OrthographicCamera camera (.getCamera view-port)]
     (.glClearColor Gdx/gl
                    (.r background-color)
                    (.g background-color)
@@ -228,5 +207,5 @@
     (.end sprite-batch)
 
     (render-score sprite-batch font camera score
-                  world-width world-height (:rect-size grid))
+                  world-width grid)
     (render-debug-fps sprite-batch font camera delta-time)))

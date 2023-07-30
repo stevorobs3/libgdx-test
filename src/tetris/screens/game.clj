@@ -47,6 +47,19 @@
                            :outline-color     (let [color (.cpy Color/DARK_GRAY)]
                                                 (set! (.a color) 0.7)
                                                 color)}
+        next-piece-grid   {:num-rows          10
+                           :num-cols          6
+                           :rect-size         (:rect-size grid)
+                           :x-offset          (+ (:x-offset grid)
+                                                 (+ (int (/ (:rect-size grid) 2)))
+                                                 (* (:rect-size grid) 10))
+                           :y-offset          (* (:rect-size grid) 7)
+                           :line-thickness    4
+                           :cell-vertex-pairs cell-vertex-pairs
+                           :fill-color        (.cpy Color/BLACK)
+                           :outline-color     (let [color (.cpy Color/DARK_GRAY)]
+                                                (set! (.a color) 0.7)
+                                                color)}
         ghost-piece       {:color             (let [color (.cpy Color/WHITE)]
                                                 (set! (.a color) 0.4)
                                                 color)
@@ -55,28 +68,22 @@
                            :x-offset          x-offset
                            :y-offset          y-offset
                            :cell-vertex-pairs cell-vertex-pairs}
-        state             (atom {:background-color           (.cpy Color/GRAY)
+        state             (atom {:background-color        (.cpy Color/GRAY)
                                  ;todo: move times need to be made simpler
-                                 :move-time                  {:down      (scoring/level->down-move-time 0)
-                                                              :sideways  1
-                                                              ;todo: this isn't a move-time, this should be done async instead, possibly just using futures...
-                                                              :full-down 0.2}
-                                 :fast-move-time             0.05
-                                 :sideways-fast-move-time    0.2
-                                 :piece-line-thickness       2
-                                 :piece-spawn-point          piece-spawn-point
-                                 :next-piece-render-location [12 13] ; where to render the next piece
-                                 :next-piece-grid            {:num-rows  4
-                                                              :num-cols  4
-                                                              :rect-size rect-size
-                                                              :x-offset  (* rect-size (inc num-cols))
-                                                              :y-offset  (* rect-size (int (/ num-rows 2)))}
-                                 :tiles                      tiles
-                                 :x-offset                   x-offset
-                                 :grid                       grid
-
-                                 :ghost-piece                ghost-piece
-                                 :score                      scoring/initial-score})
+                                 :move-time               {:down      (scoring/level->down-move-time 0)
+                                                           :sideways  1
+                                                           ;todo: this isn't a move-time, this should be done async instead, possibly just using futures...
+                                                           :full-down 0.2}
+                                 :fast-move-time          0.05
+                                 :sideways-fast-move-time 0.2
+                                 :piece-line-thickness    2
+                                 :piece-spawn-point       piece-spawn-point
+                                 :next-piece-grid         next-piece-grid
+                                 :tiles                   tiles
+                                 :x-offset                x-offset
+                                 :grid                    grid
+                                 :ghost-piece             ghost-piece
+                                 :score                   scoring/initial-score})
         context           (assoc context :create-end-game-screen create-end-game-screen)]
     (gdx-screen/create
       (input/input-adapter state context create-menu-screen)

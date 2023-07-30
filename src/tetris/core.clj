@@ -181,6 +181,14 @@
     (cond-> state
             game-over? (assoc :game-state ::game-over))))
 
+(defn check-prevent-piece-holding
+  "prevent piece holding if piece has dropped below a certain point"
+  [{:keys [piece] :as state}]
+  (if (and (< (second (:position piece)) 14)
+           (not (:prevent-piece-holding? state)))
+    (assoc state :prevent-piece-holding? true)
+    state))
+
 (defn piece-movement
   [{:keys [fast-move-time
            sideways-fast-move-time
@@ -221,6 +229,7 @@
                                                   [:move-direction]))
       :down (-> state
                 (move-piece [0 -1] num-cols)
+                check-prevent-piece-holding
                 normalise-collided-piece
                 (check-for-complete-rows num-cols)
                 spawn-new-piece

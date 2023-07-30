@@ -84,7 +84,8 @@
         [next-piece & rest] next-pieces]
     (-> state
         (assoc :piece next-piece)
-        (assoc :next-pieces (concat rest [(random-piece piece-spawn-point)])))))
+        (assoc :next-pieces (concat rest [(random-piece piece-spawn-point)]))
+        (assoc :prevent-piece-holding? false))))
 
 (def all-pieces
   (->> (zipmap [0 2 3 6 8 10 12] pieces)
@@ -237,13 +238,19 @@
 
 (defn hold-piece [{:keys [piece
                           piece-spawn-point
+                          prevent-piece-holding?
                           hold-piece] :as state}]
-  ;todo: dont allow swapping multiple times without dropping
-  (cond-> state
-          (not= hold-piece piece) (assoc :hold-piece (reset-rotation
-                                                       (assoc piece :position piece-spawn-point)))
-          (nil? hold-piece) choose-next-piece
-          (some? hold-piece) (assoc :piece hold-piece)))
+  (let [hold-piece? (and (not= hold-piece piece)
+                         (not prevent-piece-holding?))]
+    (if hold-piece?
+      (let [new-state (assoc state
+                        :hold-piece (reset-rotation
+                                      (assoc piece :position piece-spawn-point))
+                        :prevent-piece-holding? true)]
+        (if (some? hold-piece)
+          (assoc new-state :piece hold-piece)
+          (choose-next-piece new-state)))
+      state)))
 
 (defn- move-downwards [state move-time timer]
   (let [new-state (piece-movement state :down)]
